@@ -74,7 +74,9 @@ const bookService = {
 
   // Borrowing operations
   borrowBook: async (userId, isbn) => {
-    return await bookApiService.post('/api/books/borrow', { userId, isbn });
+    const requestBody = { userId, isbn };
+    
+    return await bookApiService.post('/api/books/borrow', requestBody);
   },
 
   returnBook: async (userId, isbn, notes = '') => {

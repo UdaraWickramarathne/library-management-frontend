@@ -43,3 +43,182 @@ export const getUserRoleColor = (role) => {
       return 'bg-gray-500/20 text-gray-400';
   }
 };
+
+// API Base URL
+const API_BASE_URL = 'http://localhost:8082';
+
+// Book Service - API functions for book operations
+export const bookService = {
+  // Get available books with pagination and filters
+  async getAvailableBooks(params = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (params.page !== undefined) queryParams.append('page', params.page);
+      if (params.size !== undefined) queryParams.append('size', params.size);
+      if (params.search) queryParams.append('search', params.search);
+      if (params.category) queryParams.append('category', params.category);
+      if (params.author) queryParams.append('author', params.author);
+      
+      const response = await fetch(`${API_BASE_URL}/api/books/available?${queryParams}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error fetching available books:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch books'
+      };
+    }
+  },
+
+  // Get user's active borrows
+  async getUserActiveBorrows(userId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/books/borrows/user/${userId}/active`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error fetching user borrows:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch borrowed books'
+      };
+    }
+  },
+
+  // Borrow a book
+  async borrowBook(isbn, userId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/books/borrow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          isbn: isbn
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error borrowing book:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to borrow book'
+      };
+    }
+  },
+
+  // Return a book
+  async returnBook(isbn, userId, notes = '') {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/books/return`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          isbn: isbn,
+          notes: notes
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error returning book:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to return book'
+      };
+    }
+  },
+
+  // Get all books (for admin/librarian)
+  async getAllBooks(params = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (params.page !== undefined) queryParams.append('page', params.page);
+      if (params.size !== undefined) queryParams.append('size', params.size);
+      if (params.search) queryParams.append('search', params.search);
+      
+      const response = await fetch(`${API_BASE_URL}/api/books?${queryParams}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error fetching all books:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch books'
+      };
+    }
+  },
+
+  // Get book by ID
+  async getBookById(bookId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/books/${bookId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error fetching book:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch book'
+      };
+    }
+  }
+};
