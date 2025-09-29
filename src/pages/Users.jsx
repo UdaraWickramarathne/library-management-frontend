@@ -1,78 +1,85 @@
-import { useState } from 'react';
-import { Search, Filter, Plus, Edit, Trash2, UserCheck, UserX } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Filter, Plus, Edit, Trash2, UserCheck, UserX, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import CreateUserModal from '../components/users/CreateUserModal';
+import UpdateUserModal from '../components/users/UpdateUserModal';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
+import { useToast } from '../components/ui/Toast';
+import { userService } from '../services/userService';
+import { useAuth } from '../context/AuthContext';
 
 const Users = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    suspended: 0,
+    students: 0,
+    faculty: 0,
+    librarians: 0
+  });
 
-  // Mock users data
-  const users = [
-    {
-      id: 1,
-      name: 'Alice Johnson',
-      email: 'alice.johnson@email.com',
-      role: 'Student',
-      status: 'Active',
-      joinDate: '2024-01-15',
-      booksLoaned: 3,
-      fines: 0,
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=40&h=40&fit=crop&crop=face'
-    },
-    {
-      id: 2,
-      name: 'Bob Smith',
-      email: 'bob.smith@email.com',
-      role: 'Faculty',
-      status: 'Active',
-      joinDate: '2023-09-12',
-      booksLoaned: 5,
-      fines: 25.50,
-      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=40&h=40&fit=crop&crop=face'
-    },
-    {
-      id: 3,
-      name: 'Carol Davis',
-      email: 'carol.davis@email.com',
-      role: 'Student',
-      status: 'Suspended',
-      joinDate: '2023-11-03',
-      booksLoaned: 1,
-      fines: 45.00,
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face'
-    },
-    {
-      id: 4,
-      name: 'David Wilson',
-      email: 'david.wilson@email.com',
-      role: 'Librarian',
-      status: 'Active',
-      joinDate: '2022-03-20',
-      booksLoaned: 0,
-      fines: 0,
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face'
+  const { isAdmin } = useAuth();
+  const { showToast, ToastComponent } = useToast();
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await userService.getAllUsers();
+      
+      if (response.success) {
+        const userData = response.data.content || response.data;
+        setUsers(userData);
+        
+        // Calculate stats
+        const totalUsers = userData.length;
+        const activeUsers = userData.filter(user => user.status === 'ACTIVE').length;
+        const suspendedUsers = userData.filter(user => user.status === 'INACTIVE').length;
+        const students = userData.filter(user => user.role === 'STUDENT').length;
+        const librarians = userData.filter(user => user.role === 'LIBRARIAN').length;
+        const admins = userData.filter(user => user.role === 'ADMIN').length;
+
+        setStats({
+          total: totalUsers,
+          active: activeUsers,
+          suspended: suspendedUsers,
+          students: students,
+          librarians: librarians,
+          admins: admins
+        });
+      } else {
+        setError(response.message || 'Failed to fetch users');
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to fetch users');
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const stats = {
-    total: 2845,
-    active: 2720,
-    suspended: 125,
-    students: 2650,
-    faculty: 180,
-    librarians: 15
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Active':
+      case 'ACTIVE':
         return 'bg-green-500/20 text-green-400';
-      case 'Suspended':
+      case 'INACTIVE':
         return 'bg-red-500/20 text-red-400';
-      case 'Inactive':
-        return 'bg-gray-500/20 text-gray-400';
       default:
         return 'bg-gray-500/20 text-gray-400';
     }
@@ -80,19 +87,90 @@ const Users = () => {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'Student':
+      case 'STUDENT':
         return 'bg-blue-500/20 text-blue-400';
-      case 'Faculty':
+      case 'LIBRARIAN':
+        return 'bg-teal-500/20 text-teal-400';
+      case 'ADMIN':
         return 'bg-purple-500/20 text-purple-400';
-      case 'Librarian':
-        return 'bg-primary-500/20 text-teal-400';
       default:
         return 'bg-gray-500/20 text-gray-400';
     }
   };
 
+  const handleUserCreated = (newUser) => {
+    fetchUsers(); // Refresh the users list
+    showToast(`User ${newUser.fullName} created successfully!`, 'success');
+  };
+
+  const handleUserUpdated = (updatedUser) => {
+    fetchUsers(); // Refresh the users list
+    setSelectedUser(null);
+    showToast(`User ${updatedUser.fullName} updated successfully!`, 'success');
+  };
+
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setShowUpdateModal(true);
+  };
+
+  const handleActivateUser = (user) => {
+    setSelectedUser(user);
+    setConfirmAction({
+      type: 'activate',
+      title: 'Activate User',
+      message: `Are you sure you want to activate ${user.fullName}? They will be able to access the system again.`,
+      confirmText: 'Activate',
+      isDestructive: false
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleDeactivateUser = (user) => {
+    setSelectedUser(user);
+    setConfirmAction({
+      type: 'deactivate',
+      title: 'Deactivate User',
+      message: `Are you sure you want to deactivate ${user.fullName}? They will lose access to the system.`,
+      confirmText: 'Deactivate',
+      isDestructive: true
+    });
+    setShowConfirmModal(true);
+  };
+
+  const executeUserAction = async () => {
+    if (!selectedUser || !confirmAction) return;
+
+    setActionLoading(true);
+    try {
+      let response;
+      if (confirmAction.type === 'activate') {
+        response = await userService.activateUser(selectedUser.id);
+      } else if (confirmAction.type === 'deactivate') {
+        response = await userService.deactivateUser(selectedUser.id);
+      }
+
+      if (response.success) {
+        fetchUsers(); // Refresh the list
+        setShowConfirmModal(false);
+        const actionText = confirmAction.type === 'activate' ? 'activated' : 'deactivated';
+        showToast(`User ${selectedUser.fullName} ${actionText} successfully!`, 'success');
+        setSelectedUser(null);
+        setConfirmAction(null);
+      } else {
+        setError(response.message || `Failed to ${confirmAction.type} user`);
+        showToast(response.message || `Failed to ${confirmAction.type} user`, 'error');
+      }
+    } catch (error) {
+      setError(error.message || `Failed to ${confirmAction.type} user`);
+      showToast(error.message || `Failed to ${confirmAction.type} user`, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role.toLowerCase() === selectedRole.toLowerCase();
     return matchesSearch && matchesRole;
@@ -106,11 +184,30 @@ const Users = () => {
           <h1 className="text-2xl font-bold text-gray-100">User Management</h1>
           <p className="text-gray-400 mt-1">Manage library users and their permissions</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add New User
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={fetchUsers} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          {isAdmin && (
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add New User
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -134,7 +231,7 @@ const Users = () => {
           <CardContent className="p-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-red-400">{stats.suspended}</p>
-              <p className="text-xs text-gray-400">Suspended</p>
+              <p className="text-xs text-gray-400">Inactive</p>
             </div>
           </CardContent>
         </Card>
@@ -149,16 +246,16 @@ const Users = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-purple-400">{stats.faculty}</p>
-              <p className="text-xs text-gray-400">Faculty</p>
+              <p className="text-2xl font-bold text-teal-400">{stats.librarians}</p>
+              <p className="text-xs text-gray-400">Librarians</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-teal-400">{stats.librarians}</p>
-              <p className="text-xs text-gray-400">Librarians</p>
+              <p className="text-2xl font-bold text-purple-400">{stats.admins}</p>
+              <p className="text-xs text-gray-400">Admins</p>
             </div>
           </CardContent>
         </Card>
@@ -187,8 +284,8 @@ const Users = () => {
               >
                 <option value="all">All Roles</option>
                 <option value="student">Students</option>
-                <option value="faculty">Faculty</option>
                 <option value="librarian">Librarians</option>
+                <option value="admin">Admins</option>
               </select>
               <Button variant="secondary">
                 <Filter className="w-4 h-4 mr-2" />
@@ -219,68 +316,137 @@ const Users = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-700/50">
-                    <td className="table-cell">
-                      <div className="flex items-center">
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-10 h-10 rounded-full mr-3"
-                        />
-                        <div>
-                          <p className="font-medium text-gray-100">{user.name}</p>
-                          <p className="text-sm text-gray-400">{user.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="table-cell">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="table-cell">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="table-cell">
-                      <span className="font-medium text-gray-100">{user.booksLoaned}</span>
-                    </td>
-                    <td className="table-cell">
-                      <span className={`font-medium ${user.fines > 0 ? 'text-red-400' : 'text-gray-100'}`}>
-                        ${user.fines.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="table-cell text-gray-400">
-                      {user.joinDate}
-                    </td>
-                    <td className="table-cell">
-                      <div className="flex items-center justify-center space-x-1">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        {user.status === 'Active' ? (
-                          <Button variant="ghost" size="sm" className="text-red-400">
-                            <UserX className="w-4 h-4" />
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" size="sm" className="text-green-400">
-                            <UserCheck className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="sm" className="text-red-400">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="table-cell text-center py-8">
+                      <div className="flex items-center justify-center">
+                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                        Loading users...
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="table-cell text-center py-8 text-gray-400">
+                      No users found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-slate-700/50">
+                      <td className="table-cell">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-slate-600 rounded-full mr-3 flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-100">
+                              {user.fullName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-100">{user.fullName}</p>
+                            <p className="text-sm text-gray-400">{user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        <span className="font-medium text-gray-100">-</span>
+                      </td>
+                      <td className="table-cell">
+                        <span className="font-medium text-gray-100">-</span>
+                      </td>
+                      <td className="table-cell text-gray-400">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
+                      </td>
+                      <td className="table-cell">
+                        <div className="flex items-center justify-center space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            title="Edit User"
+                            onClick={() => handleEditUser(user)}
+                            disabled={!isAdmin}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {user.status === 'ACTIVE' ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-400"
+                              title="Deactivate User"
+                              onClick={() => handleDeactivateUser(user)}
+                              disabled={!isAdmin}
+                            >
+                              <UserX className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-green-400"
+                              title="Activate User"
+                              onClick={() => handleActivateUser(user)}
+                              disabled={!isAdmin}
+                            >
+                              <UserCheck className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Create User Modal */}
+      <CreateUserModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onUserCreated={handleUserCreated}
+      />
+
+      {/* Update User Modal */}
+      <UpdateUserModal 
+        isOpen={showUpdateModal}
+        onClose={() => {
+          setShowUpdateModal(false);
+          setSelectedUser(null);
+        }}
+        onUserUpdated={handleUserUpdated}
+        user={selectedUser}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setSelectedUser(null);
+          setConfirmAction(null);
+        }}
+        onConfirm={executeUserAction}
+        title={confirmAction?.title || ''}
+        message={confirmAction?.message || ''}
+        confirmText={confirmAction?.confirmText || 'Confirm'}
+        isDestructive={confirmAction?.isDestructive || false}
+        loading={actionLoading}
+      />
+
+      {/* Toast Notifications */}
+      <ToastComponent />
     </div>
   );
 };

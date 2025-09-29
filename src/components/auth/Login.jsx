@@ -23,6 +23,8 @@ const Login = () => {
     if (!result.success) {
       setError(result.error);
     }
+    // Note: If login is successful and user must change password,
+    // the routing will be handled by the App component based on user.mustChangePassword
     
     setLoading(false);
   };
@@ -83,12 +85,11 @@ const Login = () => {
             </form>
             
             <div className="mt-6 border-t border-slate-700 pt-6">
-              <h4 className="text-sm font-medium text-gray-100 mb-3">Demo Accounts:</h4>
+              <h4 className="text-sm font-medium text-gray-100 mb-3">Default Admin Account:</h4>
               <div className="space-y-2 text-xs text-gray-400">
-                <div>📧 admin@library.com (Admin)</div>
-                <div>📧 librarian@library.com (Librarian)</div>
-                <div>📧 student@library.com (Student)</div>
-                <div className="text-yellow-400">🔑 Password: password</div>
+                <div>📧 admin@library.com</div>
+                <div className="text-yellow-400">🔑 Password: admin123456</div>
+                <div className="text-blue-400 mt-2">ℹ️ Create other users after logging in</div>
               </div>
             </div>
           </CardContent>

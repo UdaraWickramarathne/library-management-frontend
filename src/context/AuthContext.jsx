@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services/authService.js';
 
 const AuthContext = createContext();
 
@@ -14,77 +15,76 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock user roles
+  // User roles
   const USER_ROLES = {
-    ADMIN: 'admin',
-    LIBRARIAN: 'librarian',
-    STUDENT: 'student'
-  };
-
-  // Mock users for demo
-  const mockUsers = {
-    'admin@library.com': { 
-      id: 1, 
-      email: 'admin@library.com', 
-      name: 'John Admin', 
-      role: USER_ROLES.ADMIN,
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
-    },
-    'librarian@library.com': { 
-      id: 2, 
-      email: 'librarian@library.com', 
-      name: 'Jane Librarian', 
-      role: USER_ROLES.LIBRARIAN,
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face'
-    },
-    'student@library.com': { 
-      id: 3, 
-      email: 'student@library.com', 
-      name: 'Bob Student', 
-      role: USER_ROLES.STUDENT,
-      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=32&h=32&fit=crop&crop=face'
-    }
+    ADMIN: 'ADMIN',
+    LIBRARIAN: 'LIBRARIAN',
+    STUDENT: 'STUDENT'
   };
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage)
-    const savedUser = localStorage.getItem('library_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        localStorage.removeItem('library_user');
+    const initializeAuth = async () => {
+      const token = authService.getToken();
+      if (token) {
+        try {
+          const response = await authService.getUserProfile();
+          if (response.success) {
+            setUser(response.data);
+            localStorage.setItem('user_data', JSON.stringify(response.data));
+          } else {
+            authService.logout();
+          }
+        } catch (error) {
+          console.error('Failed to get user profile:', error);
+          authService.logout();
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email, password) => {
-    // Mock login - in real app, this would be an API call
-    const user = mockUsers[email];
-    if (user && password === 'password') {
-      setUser(user);
-      localStorage.setItem('library_user', JSON.stringify(user));
-      return { success: true };
+    try {
+      const response = await authService.login({ email, password });
+      if (response.success) {
+        setUser(response.data.user);
+        localStorage.setItem('user_data', JSON.stringify(response.data.user));
+        return { success: true, user: response.data.user };
+      }
+      return { success: false, error: response.message || 'Login failed' };
+    } catch (error) {
+      return { success: false, error: error.message || 'Login failed' };
     }
-    return { success: false, error: 'Invalid credentials' };
   };
 
   const logout = () => {
+    authService.logout();
     setUser(null);
-    localStorage.removeItem('library_user');
+  };
+
+  const changePasswordFirstTime = async (passwordData) => {
+    try {
+      const response = await authService.changePasswordFirstTime(passwordData);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const value = {
     user,
     login,
     logout,
+    changePasswordFirstTime,
     loading,
     USER_ROLES,
     isAuthenticated: !!user,
     isAdmin: user?.role === USER_ROLES.ADMIN,
     isLibrarian: user?.role === USER_ROLES.LIBRARIAN,
     isStudent: user?.role === USER_ROLES.STUDENT,
+    mustChangePassword: user?.mustChangePassword,
   };
 
   return (

@@ -13,7 +13,9 @@ import {
   X,
   LogOut,
   Settings,
-  Home
+  Home,
+  Calendar,
+  MapPin
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -39,6 +41,18 @@ const Sidebar = ({ isOpen, onClose }) => {
       href: '/books',
       icon: Book,
       roles: [USER_ROLES.ADMIN, USER_ROLES.LIBRARIAN]
+    },
+    {
+      name: 'Room Management',
+      href: '/rooms',
+      icon: MapPin,
+      roles: [USER_ROLES.ADMIN, USER_ROLES.LIBRARIAN]
+    },
+    {
+      name: 'Room Bookings',
+      href: '/bookings',
+      icon: Calendar,
+      roles: [USER_ROLES.ADMIN, USER_ROLES.LIBRARIAN, USER_ROLES.STUDENT]
     },
     {
       name: 'Loan Management',
@@ -134,14 +148,14 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="border-t border-slate-700 p-4">
           <div className="flex items-center mb-4">
             <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white font-medium mr-3">
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              {user?.fullName?.charAt(0)?.toUpperCase() || user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-100 truncate">
-                {user?.name || 'User'}
+                {user?.fullName || user?.name || 'User'}
               </p>
               <p className="text-xs text-gray-400 capitalize">
-                {user?.role || 'student'}
+                {user?.role?.toLowerCase() || 'student'}
               </p>
             </div>
           </div>
