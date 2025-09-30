@@ -1,687 +1,386 @@
-import { useState } from 'react';
-import { 
-  BookOpen, 
-  Clock, 
-  DollarSign, 
-  AlertTriangle,
-  Calendar,
-  Star,
-  TrendingUp,
-  Search,
-  X,
-  Filter,
-  Heart,
-  Plus,
-  Eye
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import React, { useState, useEffect } from 'react';
+import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { useAuth } from '../../context/AuthContext';
+import { bookService } from '../../services/bookService';
+import BookBrowsingModal from '../books/BookBrowsingModal';
+import BorrowedBooksModal from './BorrowedBooksModal';
+import ReservationsModal from './ReservationsModal';
 
 const StudentDashboard = () => {
-  // State for browse books modal
-  const [showBrowseModal, setShowBrowseModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedBook, setSelectedBook] = useState(null);
-
-  // Mock data
-  const stats = {
-    booksLoaned: 3,
-    overdueBooks: 1,
-    totalFines: 15.50,
-    daysUntilDue: 5
-  };
-
-  const currentLoans = [
-    {
-      id: 1,
-      title: "Clean Code",
-      author: "Robert C. Martin",
-      dueDate: "2024-01-15",
-      daysLeft: 5,
-      cover: "https://via.placeholder.com/80x120/1e293b/f1f5f9?text=Clean+Code"
-    },
-    {
-      id: 2,
-      title: "The Pragmatic Programmer",
-      author: "David Thomas",
-      dueDate: "2024-01-12",
-      daysLeft: 2,
-      cover: "https://via.placeholder.com/80x120/1e293b/f1f5f9?text=Pragmatic"
-    },
-    {
-      id: 3,
-      title: "Design Patterns",
-      author: "Gang of Four",
-      dueDate: "2024-01-08",
-      daysLeft: -2,
-      cover: "https://via.placeholder.com/80x120/1e293b/f1f5f9?text=Design"
-    }
-  ];
-
-  const recommendations = [
-    {
-      id: 1,
-      title: "JavaScript: The Good Parts",
-      author: "Douglas Crockford",
-      rating: 4.5,
-      cover: "https://via.placeholder.com/40x56/1e293b/f1f5f9?text=JS"
-    },
-    {
-      id: 2,
-      title: "System Design Interview",
-      author: "Alex Xu",
-      rating: 4.8,
-      cover: "https://via.placeholder.com/40x56/1e293b/f1f5f9?text=SYS"
-    }
-  ];
-
-  const fines = [
-    {
-      id: 1,
-      book: "Design Patterns",
-      amount: 15.50,
-      reason: "Late return (2 days overdue)",
-      dueDate: "2024-01-08"
-    }
-  ];
-
-  // Available books for browsing
-  const availableBooks = [
-    {
-      id: 1,
-      title: "JavaScript: The Good Parts",
-      author: "Douglas Crockford",
-      category: "Computer Science",
-      isbn: "978-0596517748",
-      published: "2008",
-      pages: 176,
-      rating: 4.5,
-      reviews: 234,
-      available: true,
-      copies: 3,
-      description: "Most programming languages contain good and bad parts, but JavaScript has more than its share of the bad, having been developed and released in a hurry before it could be refined.",
-      cover: "https://via.placeholder.com/120x160/1e293b/f1f5f9?text=JS+Good+Parts"
-    },
-    {
-      id: 2,
-      title: "Clean Architecture",
-      author: "Robert C. Martin",
-      category: "Computer Science",
-      isbn: "978-0134494166",
-      published: "2017",
-      pages: 432,
-      rating: 4.7,
-      reviews: 189,
-      available: true,
-      copies: 2,
-      description: "A comprehensive guide to software architecture and design principles for building maintainable, flexible, and testable applications.",
-      cover: "https://via.placeholder.com/120x160/1e293b/f1f5f9?text=Clean+Arch"
-    },
-    {
-      id: 3,
-      title: "Introduction to Linear Algebra",
-      author: "Gilbert Strang",
-      category: "Mathematics",
-      isbn: "978-0980232776",
-      published: "2016",
-      pages: 584,
-      rating: 4.8,
-      reviews: 156,
-      available: false,
-      copies: 0,
-      description: "A comprehensive introduction to the basic concepts of linear algebra, along with an introduction to the ideas of mathematical proof.",
-      cover: "https://via.placeholder.com/120x160/1e293b/f1f5f9?text=Linear+Algebra"
-    },
-    {
-      id: 4,
-      title: "Organic Chemistry",
-      author: "Paula Yurkanis Bruice",
-      category: "Chemistry",
-      isbn: "978-0134042282",
-      published: "2019",
-      pages: 1248,
-      rating: 4.3,
-      reviews: 92,
-      available: true,
-      copies: 4,
-      description: "A student-friendly approach to organic chemistry with emphasis on understanding rather than memorization.",
-      cover: "https://via.placeholder.com/120x160/1e293b/f1f5f9?text=Organic+Chem"
-    },
-    {
-      id: 5,
-      title: "Physics for Scientists and Engineers",
-      author: "Raymond A. Serway",
-      category: "Physics",
-      isbn: "978-1133947271",
-      published: "2018",
-      pages: 1552,
-      rating: 4.6,
-      reviews: 203,
-      available: true,
-      copies: 5,
-      description: "A comprehensive physics textbook covering mechanics, thermodynamics, electromagnetism, and modern physics.",
-      cover: "https://via.placeholder.com/120x160/1e293b/f1f5f9?text=Physics"
-    },
-    {
-      id: 6,
-      title: "Data Structures and Algorithms in Python",
-      author: "Michael T. Goodrich",
-      category: "Computer Science",
-      isbn: "978-1118290279",
-      published: "2013",
-      pages: 770,
-      rating: 4.4,
-      reviews: 167,
-      available: true,
-      copies: 2,
-      description: "A comprehensive guide to data structures and algorithms implemented in Python programming language.",
-      cover: "https://via.placeholder.com/120x160/1e293b/f1f5f9?text=DS+Algo"
-    }
-  ];
-
-  const categories = [
-    'all',
-    'Computer Science',
-    'Mathematics', 
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'Literature',
-    'History'
-  ];
-
-  // Filter books based on search and category
-  const filteredBooks = availableBooks.filter(book => {
-    const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         book.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  const { user } = useAuth();
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [stats, setStats] = useState({
+    booksLoaned: 0,
+    overdueBooks: 0,
+    totalFines: 0,
+    daysUntilDue: 0,
+    activeReservations: 0
   });
+  const [borrowedBooks, setBorrowedBooks] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [showBrowseModal, setShowBrowseModal] = useState(false);
+  const [showBorrowedModal, setShowBorrowedModal] = useState(false);
+  const [showReservationsModal, setShowReservationsModal] = useState(false);
 
-  // Handle book reservation
-  const handleReserveBook = (bookId) => {
-    console.log('Reserving book:', bookId);
-    // Add reservation logic here
-    alert('Book reservation request sent!');
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Fetch borrowed books and reservations in parallel
+      const [borrowedResponse, reservationsResponse] = await Promise.all([
+        bookService.getUserActiveBorrows(user.id),
+        bookService.getUserActiveReservations(user.id)
+      ]);
+      
+      // Handle borrowed books
+      if (borrowedResponse.success) {
+        const books = Array.isArray(borrowedResponse.data) ? borrowedResponse.data : [];
+        setBorrowedBooks(books);
+        
+        // Calculate stats from real data
+        const now = new Date();
+        let totalFines = 0;
+        let overdueCount = 0;
+        let nextDueDate = null;
+        
+        if (Array.isArray(books) && books.length > 0) {
+          books.forEach(borrow => {
+            if (borrow.dueDate) {
+              const dueDate = new Date(borrow.dueDate);
+              const diffTime = dueDate - now;
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              
+              // If overdue
+              if (diffDays < 0) {
+                overdueCount++;
+                // Calculate fine (assuming $1 per day overdue)
+                totalFines += Math.abs(diffDays) * 1;
+              } else {
+                // Find next due date
+                if (!nextDueDate || dueDate < nextDueDate) {
+                  nextDueDate = dueDate;
+                }
+              }
+            }
+          });
+        }
+        
+        // Calculate days until next due date
+        const daysUntilDue = nextDueDate 
+          ? Math.ceil((nextDueDate - now) / (1000 * 60 * 60 * 24))
+          : 0;
+        
+        // Handle reservations
+        let activeReservations = 0;
+        if (reservationsResponse.success) {
+          const reservationData = Array.isArray(reservationsResponse.data) ? reservationsResponse.data : [];
+          setReservations(reservationData);
+          activeReservations = reservationData.length;
+        }
+        
+        setStats({
+          booksLoaned: books.length,
+          overdueBooks: overdueCount,
+          totalFines: totalFines,
+          daysUntilDue: Math.max(0, daysUntilDue),
+          activeReservations: activeReservations
+        });
+      } else {
+        setError('Failed to load borrowed books');
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Handle opening book details
-  const handleViewBookDetails = (book) => {
-    setSelectedBook(book);
+  const refreshDashboard = () => {
+    loadDashboardData();
   };
+
+  const handleQuickReturn = async (borrow) => {
+    if (!borrow || !user) return;
+    
+    const confirmReturn = window.confirm(`Are you sure you want to return "${borrow.book?.title}"?`);
+    
+    if (confirmReturn) {
+      try {
+        const response = await bookService.returnBook(user.id, borrow.book?.isbn, 'Quick return from dashboard');
+        
+        if (response.success) {
+          alert(`Successfully returned "${borrow.book?.title}"`);
+          refreshDashboard(); // Refresh the dashboard data
+        } else {
+          alert('Failed to return book: ' + (response.message || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error returning book:', error);
+        alert('Failed to return book: ' + error.message);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-100">Good morning, Bob! 👋</h1>
-          <p className="text-gray-400 mt-1">Here's what's happening with your library account</p>
-        </div>
-        <div className="mt-4 sm:mt-0">
-          <Button 
-            variant="primary" 
-            className="bg-teal-500 hover:bg-teal-600"
-            onClick={() => setShowBrowseModal(true)}
-          >
-            <Search className="w-4 h-4 mr-2" />
-            Browse Books
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
+        <div className="space-x-4">
+          <Button onClick={() => setShowBrowseModal(true)}>
+            Reserve Books
           </Button>
+          <Button variant="outline" onClick={() => setShowReservationsModal(true)}>
+            My Reservations
+          </Button>
+          {/* <Button variant="outline" onClick={() => setShowBorrowedModal(true)}>
+            My Books
+          </Button> */}
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <BookOpen className="w-8 h-8 text-teal-400" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Books Loaned</p>
-                <p className="text-2xl font-bold text-gray-100">{stats.booksLoaned}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Clock className="w-8 h-8 text-yellow-400" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Due Soon</p>
-                <p className="text-2xl font-bold text-gray-100">{stats.daysUntilDue} days</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <AlertTriangle className="w-8 h-8 text-red-400" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Overdue</p>
-                <p className="text-2xl font-bold text-gray-100">{stats.overdueBooks}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <DollarSign className="w-8 h-8 text-red-400" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Total Fines</p>
-                <p className="text-2xl font-bold text-gray-100">${stats.totalFines}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Current Loans */}
-        <div className="lg:col-span-2">
-          <Card className="h-fit">
-            <CardHeader className="px-6 py-4">
-              <CardTitle className="text-lg font-semibold text-gray-100 flex items-center h-7">Current Loans</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {currentLoans.map((loan) => (
-                  <div key={loan.id} className="flex items-center justify-between p-4 bg-slate-700/50 hover:bg-slate-700 rounded-lg border border-slate-600/30">
-                    <div className="flex items-center flex-1">
-                      <img
-                        src={loan.cover}
-                        alt={loan.title}
-                        className="w-14 h-18 object-cover rounded border border-slate-600"
-                      />
-                      <div className="ml-4 flex-1">
-                        <h4 className="font-semibold text-gray-100 text-base">{loan.title}</h4>
-                        <p className="text-sm text-gray-400 mt-1">{loan.author}</p>
-                        <div className="flex items-center mt-2">
-                          <Calendar className="w-4 h-4 mr-1 text-gray-400" />
-                          <span className={`text-sm font-medium ${
-                            loan.daysLeft < 0 
-                              ? 'text-red-400' 
-                              : loan.daysLeft <= 2 
-                              ? 'text-yellow-400' 
-                              : 'text-teal-400'
-                          }`}>
-                            {loan.daysLeft < 0 
-                              ? `${Math.abs(loan.daysLeft)} days overdue`
-                              : `${loan.daysLeft} days left`
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col space-y-2 ml-4">
-                      <Button size="sm" variant="primary" className="bg-teal-500 hover:bg-teal-600 min-w-[80px]">Renew</Button>
-                      {loan.daysLeft < 0 && (
-                        <Button size="sm" variant="danger" className="min-w-[80px]">Pay Fine</Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Outstanding Fines */}
-          {fines.length > 0 && (
-            <Card className="h-fit">
-              <CardHeader className="px-6 py-4">
-                <CardTitle className="text-red-400 flex items-center text-lg font-semibold h-7">
-                  <AlertTriangle className="w-5 h-5 mr-2" />
-                  Outstanding Fines
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {fines.map((fine) => (
-                    <div key={fine.id} className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                      <div className="flex justify-between items-start mb-3">
-                        <span className="font-semibold text-gray-100 text-base">{fine.book}</span>
-                        <span className="text-red-400 font-bold text-lg">${fine.amount}</span>
-                      </div>
-                      <p className="text-sm text-gray-400 mb-4 leading-relaxed">{fine.reason}</p>
-                      <Button size="sm" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2">
-                        Pay Now
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Recommendations */}
-          <Card className="h-fit">
-            <CardHeader className="px-6 py-4">
-              <CardTitle className="flex items-center text-lg font-semibold text-gray-100">
-                <TrendingUp className="w-5 h-5 mr-2" />
-                Recommended for You
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {recommendations.map((book) => (
-                  <div key={book.id} className="flex items-center p-3 hover:bg-slate-700/30 rounded-lg transition-colors">
-                    <img
-                      src={book.cover}
-                      alt={book.title}
-                      className="w-12 h-16 object-cover rounded border border-slate-600"
-                    />
-                    <div className="ml-4 flex-1">
-                      <h5 className="text-sm font-semibold text-gray-100 leading-tight">{book.title}</h5>
-                      <p className="text-xs text-gray-400 mt-1">{book.author}</p>
-                      <div className="flex items-center mt-2">
-                        <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                        <span className="text-xs text-gray-400 ml-1 font-medium">{book.rating}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Button size="sm" variant="ghost" className="w-full mt-6 text-teal-400 hover:text-teal-300 hover:bg-teal-400/10">
-                View All Recommendations
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="h-fit">
-            <CardHeader className="px-6 py-4">
-              <CardTitle className="text-lg font-semibold text-gray-100">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-3">
-                <Button 
-                  variant="secondary" 
-                  size="sm" 
-                  className="w-full justify-start py-3 hover:bg-slate-600"
-                  onClick={() => setShowBrowseModal(true)}
-                >
-                  <Search className="w-4 h-4 mr-3" />
-                  Search Catalog
-                </Button>
-                <Button variant="secondary" size="sm" className="w-full justify-start py-3 hover:bg-slate-600">
-                  <Clock className="w-4 h-4 mr-3" />
-                  Loan History
-                </Button>
-                <Button variant="secondary" size="sm" className="w-full justify-start py-3 hover:bg-slate-600">
-                  <DollarSign className="w-4 h-4 mr-3" />
-                  Payment History
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Browse Books Modal */}
-      {showBrowseModal && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800/95 border border-slate-700/50 rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col backdrop-blur-md">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-700">
-              <h2 className="text-2xl font-bold text-gray-100">Browse Books</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowBrowseModal(false)}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            {/* Search and Filters */}
-            <div className="p-6 border-b border-slate-700">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      type="text"
-                      placeholder="Search by title, author, or category..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>
-                        {category === 'all' ? 'All Categories' : category}
-                      </option>
-                    ))}
-                  </select>
-                  <Button variant="secondary" size="sm">
-                    <Filter className="w-4 h-4 mr-2" />
-                    More Filters
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Books Grid */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredBooks.map((book) => (
-                  <Card key={book.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col h-full">
-                        <div className="flex gap-4 mb-4">
-                          <img
-                            src={book.cover}
-                            alt={book.title}
-                            className="w-20 h-28 object-cover rounded border border-slate-600"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-100 text-sm leading-tight mb-1">
-                              {book.title}
-                            </h3>
-                            <p className="text-xs text-gray-400 mb-2">{book.author}</p>
-                            <span className="inline-block px-2 py-1 bg-teal-500/20 text-teal-400 text-xs rounded-full">
-                              {book.category}
-                            </span>
-                            <div className="flex items-center mt-2">
-                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-xs text-gray-400 ml-1">{book.rating}</span>
-                              <span className="text-xs text-gray-500 ml-1">({book.reviews})</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-gray-400 mb-3 line-clamp-2 flex-1">
-                          {book.description}
-                        </p>
-
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="text-xs text-gray-400">
-                            <p>Published: {book.published}</p>
-                            <p>Pages: {book.pages}</p>
-                          </div>
-                          <div className="text-right">
-                            {book.available ? (
-                              <span className="text-xs text-green-400">
-                                {book.copies} available
-                              </span>
-                            ) : (
-                              <span className="text-xs text-red-400">
-                                Not available
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleViewBookDetails(book)}
-                          >
-                            <Eye className="w-3 h-3 mr-1" />
-                            Details
-                          </Button>
-                          {book.available ? (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              className="flex-1 bg-teal-500 hover:bg-teal-600"
-                              onClick={() => handleReserveBook(book.id)}
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Reserve
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="flex-1"
-                              disabled
-                            >
-                              <Heart className="w-3 h-3 mr-1" />
-                              Wishlist
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {filteredBooks.length === 0 && (
-                <div className="text-center py-12">
-                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-100 mb-2">No books found</h3>
-                  <p className="text-gray-400">
-                    Try adjusting your search or filter criteria
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+          {error}
         </div>
       )}
 
-      {/* Book Details Modal */}
-      {selectedBook && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800/95 border border-slate-700/50 rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-md">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-100">Book Details</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedBook(null)}
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-
-              <div className="flex gap-6 mb-6">
-                <img
-                  src={selectedBook.cover}
-                  alt={selectedBook.title}
-                  className="w-32 h-44 object-cover rounded border border-slate-600"
-                />
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-100 mb-2">
-                    {selectedBook.title}
-                  </h3>
-                  <p className="text-gray-400 mb-2">by {selectedBook.author}</p>
-                  
-                  <div className="flex items-center mb-4">
-                    <div className="flex items-center mr-4">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-300 ml-1">{selectedBook.rating}</span>
-                      <span className="text-sm text-gray-500 ml-1">({selectedBook.reviews} reviews)</span>
-                    </div>
-                    <span className="px-2 py-1 bg-teal-500/20 text-teal-400 text-sm rounded-full">
-                      {selectedBook.category}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                    <div>
-                      <span className="text-gray-400">ISBN:</span>
-                      <span className="text-gray-100 ml-2">{selectedBook.isbn}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Published:</span>
-                      <span className="text-gray-100 ml-2">{selectedBook.published}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Pages:</span>
-                      <span className="text-gray-100 ml-2">{selectedBook.pages}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Availability:</span>
-                      <span className={`ml-2 ${selectedBook.available ? 'text-green-400' : 'text-red-400'}`}>
-                        {selectedBook.available ? `${selectedBook.copies} available` : 'Not available'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h4 className="text-lg font-semibold text-gray-100 mb-3">Description</h4>
-                <p className="text-gray-400 leading-relaxed">{selectedBook.description}</p>
-              </div>
-
-              <div className="flex gap-3">
-                {selectedBook.available ? (
-                  <Button
-                    className="flex-1 bg-teal-500 hover:bg-teal-600"
-                    onClick={() => {
-                      handleReserveBook(selectedBook.id);
-                      setSelectedBook(null);
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Reserve This Book
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    className="flex-1"
-                    disabled
-                  >
-                    <Heart className="w-4 h-4 mr-2" />
-                    Add to Wishlist
-                  </Button>
-                )}
-                <Button
-                  variant="secondary"
-                  onClick={() => setSelectedBook(null)}
-                >
-                  Close
-                </Button>
-              </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <Card className="p-6 bg-blue-50 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-blue-600">Books Loaned</p>
+              <p className="text-2xl font-bold text-blue-900">{stats.booksLoaned}</p>
+            </div>
+            <div className="p-3 bg-blue-100 rounded-full">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
             </div>
           </div>
+        </Card>
+
+        <Card className="p-6 bg-purple-50 border-purple-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-600">Active Reservations</p>
+              <p className="text-2xl font-bold text-purple-900">{stats.activeReservations}</p>
+            </div>
+            <div className="p-3 bg-purple-100 rounded-full">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-red-50 border-red-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-600">Overdue Books</p>
+              <p className="text-2xl font-bold text-red-900">{stats.overdueBooks}</p>
+            </div>
+            <div className="p-3 bg-red-100 rounded-full">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-yellow-50 border-yellow-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-yellow-600">Total Fines</p>
+              <p className="text-2xl font-bold text-yellow-900">${stats.totalFines.toFixed(2)}</p>
+            </div>
+            <div className="p-3 bg-yellow-100 rounded-full">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+              </svg>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-green-50 border-green-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-600">Days Until Due</p>
+              <p className="text-2xl font-bold text-green-900">{stats.daysUntilDue}</p>
+            </div>
+            <div className="p-3 bg-green-100 rounded-full">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Current Loans */}
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Current Loans</h2>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={refreshDashboard}
+          >
+            Refresh
+          </Button>
         </div>
+        
+        {borrowedBooks && borrowedBooks.length === 0 ? (
+          <div className="text-center py-8">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No books borrowed</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Start by reserving books from our collection. A librarian will checkout the books for you.
+            </p>
+            <div className="mt-6">
+              <Button onClick={() => setShowBrowseModal(true)}>
+                Reserve Books
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {Array.isArray(borrowedBooks) && borrowedBooks.slice(0, 3).map((borrow) => {
+              const dueDate = new Date(borrow.dueDate);
+              const now = new Date();
+              const diffTime = dueDate - now;
+              const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              
+              return (
+                <div key={borrow.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0 w-12 h-16 bg-gray-200 rounded flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900">{borrow.book?.title || 'Unknown Title'}</h3>
+                      <p className="text-sm text-gray-500">{borrow.book?.author || 'Unknown Author'}</p>
+                      <p className="text-sm text-gray-500">Due: {dueDate.toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      daysLeft < 0 
+                        ? 'bg-red-100 text-red-800' 
+                        : daysLeft <= 3 
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                    }`}>
+                      {daysLeft < 0 
+                        ? `${Math.abs(daysLeft)} days overdue`
+                        : `${daysLeft} days left`
+                      }
+                    </span>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleQuickReturn(borrow)}
+                      className="min-w-[80px]"
+                    >
+                      Return
+                    </Button>
+                    {daysLeft < 0 && (
+                      <Button size="sm" variant="danger" className="min-w-[80px]">
+                        Pay Fine
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            
+            {Array.isArray(borrowedBooks) && borrowedBooks.length > 3 && (
+              <div className="text-center pt-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowBorrowedModal(true)}
+                >
+                  View All {borrowedBooks.length} Books
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* Fines Section */}
+      {stats.totalFines > 0 && (
+        <Card className="p-6 bg-red-50 border-red-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-red-900">Outstanding Fines</h2>
+              <p className="text-sm text-red-600 mt-1">
+                You have ${stats.totalFines.toFixed(2)} in overdue fines
+              </p>
+            </div>
+            <Button variant="danger">
+              Pay Fines
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Modals */}
+      {showBrowseModal && (
+        <BookBrowsingModal 
+          show={showBrowseModal}
+          onClose={() => setShowBrowseModal(false)}
+          userId={Number(user?.id)}
+          onBookReserved={refreshDashboard}
+        />
+      )}
+
+      {showReservationsModal && (
+        <ReservationsModal 
+          show={showReservationsModal}
+          onClose={() => setShowReservationsModal(false)}
+          userId={user?.id}
+          onReservationCancelled={refreshDashboard}
+        />
+      )}
+
+      {showBorrowedModal && (
+        <BorrowedBooksModal 
+          show={showBorrowedModal}
+          onClose={() => setShowBorrowedModal(false)}
+          userId={user?.id}
+          onBookReturned={refreshDashboard}
+        />
       )}
     </div>
   );

@@ -8,12 +8,20 @@ import {
   Plus,
   Search,
   FileText,
-  Calendar
+  Calendar,
+  Mail,
+  CheckCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import LibrarianCheckoutModal from './LibrarianCheckoutModal';
 
 const LibrarianDashboard = () => {
+  const { user } = useAuth();
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  
   // Mock data
   const stats = {
     totalBooks: 15420,
@@ -119,10 +127,14 @@ const LibrarianDashboard = () => {
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Librarian Dashboard 📚</h1>
+          <h1 className="text-2xl font-bold text-gray-100">Librarian Management Panel 📚</h1>
           <p className="text-gray-400 mt-1">Manage books, loans, and library operations</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
+          <Button onClick={() => setShowCheckoutModal(true)}>
+            <BookOpen className="w-4 h-4 mr-2" />
+            Checkout Book
+          </Button>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
             Add Book
@@ -305,9 +317,9 @@ const LibrarianDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button variant="secondary" size="sm" className="w-full justify-start">
+                <Button variant="secondary" size="sm" className="w-full justify-start" onClick={() => setShowCheckoutModal(true)}>
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Check Out Book
+                  Checkout Book (Create Loan)
                 </Button>
                 <Button variant="secondary" size="sm" className="w-full justify-start">
                   <FileText className="w-4 h-4 mr-2" />
@@ -324,6 +336,10 @@ const LibrarianDashboard = () => {
                 <Button variant="secondary" size="sm" className="w-full justify-start">
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Overdue Report
+                </Button>
+                <Button variant="secondary" size="sm" className="w-full justify-start">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Email Reminders
                 </Button>
               </div>
             </CardContent>
@@ -348,11 +364,30 @@ const LibrarianDashboard = () => {
                     28 overdue reminders sent today
                   </p>
                 </div>
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <p className="text-xs text-green-400 font-medium">Email Service</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    All reminder emails delivered successfully
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+      
+      {/* Checkout Modal */}
+      {showCheckoutModal && (
+        <LibrarianCheckoutModal 
+          show={showCheckoutModal}
+          onClose={() => setShowCheckoutModal(false)}
+          librarianId={user?.id}
+          onLoanCreated={() => {
+            // Refresh dashboard data if needed
+            console.log('Loan created successfully');
+          }}
+        />
+      )}
     </div>
   );
 };

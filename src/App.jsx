@@ -2,19 +2,22 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/layout/Layout';
 import Login from './components/auth/Login';
+import FirstTimePasswordChange from './components/auth/FirstTimePasswordChange';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Books from './pages/Books';
+import Rooms from './pages/Rooms';
+import RoomBookings from './pages/RoomBookings';
+import NewBooking from './pages/NewBooking';
 import Loans from './pages/Loans';
 import Payments from './pages/Payments';
-import Notifications from './pages/Notifications';
-import Reports from './pages/Reports';
+import Reminders from './pages/Reminders';
 import Settings from './pages/Settings';
 import './App.css';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles = [] }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, mustChangePassword } = useAuth();
 
   if (loading) {
     return (
@@ -28,16 +31,46 @@ const ProtectedRoute = ({ children, roles = [] }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // If user must change password, redirect to password change page
+  if (mustChangePassword) {
+    return <Navigate to="/change-password" replace />;
+  }
+
   if (roles.length > 0 && !roles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    // Smart redirect based on user role
+    if (user.role === 'ADMIN') {
+      return <Navigate to="/users" replace />;
+    } else if (user.role === 'LIBRARIAN') {
+      return <Navigate to="/books" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return children;
 };
 
+// Smart Redirect Component
+const SmartRedirect = () => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Redirect based on user role
+  if (user.role === 'ADMIN') {
+    return <Navigate to="/users" replace />;
+  } else if (user.role === 'LIBRARIAN') {
+    return <Navigate to="/books" replace />;
+  } else {
+    return <Navigate to="/dashboard" replace />;
+  }
+};
+
 // App Router Component
 const AppRouter = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, mustChangePassword } = useAuth();
 
   return (
     <Router>
@@ -45,14 +78,25 @@ const AppRouter = () => {
         <Route
           path="/login"
           element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+            isAuthenticated ? 
+              (mustChangePassword ? <Navigate to="/change-password" replace /> : <SmartRedirect />) 
+              : <Login />
+          }
+        />
+
+        <Route
+          path="/change-password"
+          element={
+            isAuthenticated && mustChangePassword ? 
+              <FirstTimePasswordChange /> : 
+              <Navigate to="/login" replace />
           }
         />
         
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['STUDENT']}>
               <Layout>
                 <Dashboard />
               </Layout>
@@ -63,7 +107,7 @@ const AppRouter = () => {
         <Route
           path="/users"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['ADMIN']}>
               <Layout>
                 <Users />
               </Layout>
@@ -74,7 +118,7 @@ const AppRouter = () => {
         <Route
           path="/books"
           element={
-            <ProtectedRoute roles={['admin', 'librarian']}>
+            <ProtectedRoute roles={['ADMIN', 'LIBRARIAN']}>
               <Layout>
                 <Books />
               </Layout>
@@ -83,9 +127,42 @@ const AppRouter = () => {
         />
 
         <Route
+          path="/rooms"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'LIBRARIAN']}>
+              <Layout>
+                <Rooms />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'LIBRARIAN', 'STUDENT']}>
+              <Layout>
+                <RoomBookings />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/bookings/new"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'LIBRARIAN', 'STUDENT']}>
+              <Layout>
+                <NewBooking />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/loans"
           element={
-            <ProtectedRoute roles={['admin', 'librarian']}>
+            <ProtectedRoute roles={['ADMIN', 'LIBRARIAN']}>
               <Layout>
                 <Loans />
               </Layout>
@@ -96,7 +173,7 @@ const AppRouter = () => {
         <Route
           path="/my-loans"
           element={
-            <ProtectedRoute roles={['student']}>
+            <ProtectedRoute roles={['STUDENT']}>
               <Layout>
                 <Loans />
               </Layout>
@@ -107,7 +184,7 @@ const AppRouter = () => {
         <Route
           path="/payments"
           element={
-            <ProtectedRoute roles={['admin', 'librarian', 'student']}>
+            <ProtectedRoute roles={['ADMIN', 'LIBRARIAN', 'STUDENT']}>
               <Layout>
                 <Payments />
               </Layout>
@@ -116,22 +193,11 @@ const AppRouter = () => {
         />
 
         <Route
-          path="/notifications"
+          path="/reminders"
           element={
-            <ProtectedRoute roles={['admin', 'librarian', 'student']}>
+            <ProtectedRoute roles={['ADMIN', 'LIBRARIAN']}>
               <Layout>
-                <Notifications />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute roles={['admin', 'librarian']}>
-              <Layout>
-                <Reports />
+                <Reminders />
               </Layout>
             </ProtectedRoute>
           }
@@ -140,7 +206,7 @@ const AppRouter = () => {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['ADMIN']}>
               <Layout>
                 <Settings />
               </Layout>
@@ -150,7 +216,7 @@ const AppRouter = () => {
         
         <Route
           path="/"
-          element={<Navigate to="/dashboard" replace />}
+          element={<SmartRedirect />}
         />
         
         <Route

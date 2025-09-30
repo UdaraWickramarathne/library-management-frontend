@@ -6,9 +6,12 @@ import {
   Activity,
   AlertTriangle,
   Calendar,
-  BarChart3,
   UserPlus,
-  Settings
+  Settings,
+  Mail,
+  CheckCircle,
+  XCircle,
+  BarChart3
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -22,6 +25,14 @@ const AdminDashboard = () => {
     revenue: 8750.25,
     monthlyGrowth: 12.5,
     systemUptime: 99.9
+  };
+
+  // Mock reminder stats
+  const reminderStats = {
+    totalSent: 156,
+    sentToday: 23,
+    failed: 5,
+    status: 'UP'
   };
 
   const recentUsers = [
@@ -101,8 +112,8 @@ const AdminDashboard = () => {
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Admin Dashboard 🛠️</h1>
-          <p className="text-gray-400 mt-1">System overview and management console</p>
+          <h1 className="text-2xl font-bold text-gray-100">Admin Management Panel 🛠️</h1>
+          <p className="text-gray-400 mt-1">System overview and administrative controls</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
           <Button>
@@ -332,6 +343,50 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
+          {/* Email Reminders Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Mail className="w-4 h-4 mr-2 text-blue-400" />
+                Email Reminders
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">System Status</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    reminderStats.status === 'UP' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {reminderStats.status}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-center p-2 bg-slate-700 rounded">
+                    <div className="flex items-center justify-center mb-1">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                    </div>
+                    <p className="text-sm font-bold text-gray-100">{reminderStats.totalSent}</p>
+                    <p className="text-xs text-gray-400">Total Sent</p>
+                  </div>
+                  <div className="text-center p-2 bg-slate-700 rounded">
+                    <div className="flex items-center justify-center mb-1">
+                      <Mail className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <p className="text-sm font-bold text-gray-100">{reminderStats.sentToday}</p>
+                    <p className="text-xs text-gray-400">Today</p>
+                  </div>
+                </div>
+                {reminderStats.failed > 0 && (
+                  <div className="flex items-center justify-between p-2 bg-red-500/10 border border-red-500/20 rounded">
+                    <span className="text-xs text-red-400">Failed Reminders</span>
+                    <span className="text-xs font-medium text-red-400">{reminderStats.failed}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Quick Actions */}
           <Card>
             <CardHeader>
@@ -344,16 +399,16 @@ const AdminDashboard = () => {
                   User Management
                 </Button>
                 <Button variant="secondary" size="sm" className="w-full justify-start">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Generate Reports
-                </Button>
-                <Button variant="secondary" size="sm" className="w-full justify-start">
                   <Settings className="w-4 h-4 mr-2" />
                   System Settings
                 </Button>
                 <Button variant="secondary" size="sm" className="w-full justify-start">
                   <Activity className="w-4 h-4 mr-2" />
                   Audit Logs
+                </Button>
+                <Button variant="secondary" size="sm" className="w-full justify-start">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Email Reminders
                 </Button>
               </div>
             </CardContent>
