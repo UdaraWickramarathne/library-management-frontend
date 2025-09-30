@@ -12,8 +12,14 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import LibrarianCheckoutModal from './LibrarianCheckoutModal';
 
 const LibrarianDashboard = () => {
+  const { user } = useAuth();
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  
   // Mock data
   const stats = {
     totalBooks: 15420,
@@ -123,6 +129,10 @@ const LibrarianDashboard = () => {
           <p className="text-gray-400 mt-1">Manage books, loans, and library operations</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
+          <Button onClick={() => setShowCheckoutModal(true)}>
+            <BookOpen className="w-4 h-4 mr-2" />
+            Checkout Book
+          </Button>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
             Add Book
@@ -305,9 +315,9 @@ const LibrarianDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button variant="secondary" size="sm" className="w-full justify-start">
+                <Button variant="secondary" size="sm" className="w-full justify-start" onClick={() => setShowCheckoutModal(true)}>
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Check Out Book
+                  Checkout Book (Create Loan)
                 </Button>
                 <Button variant="secondary" size="sm" className="w-full justify-start">
                   <FileText className="w-4 h-4 mr-2" />
@@ -353,6 +363,19 @@ const LibrarianDashboard = () => {
           </Card>
         </div>
       </div>
+      
+      {/* Checkout Modal */}
+      {showCheckoutModal && (
+        <LibrarianCheckoutModal 
+          show={showCheckoutModal}
+          onClose={() => setShowCheckoutModal(false)}
+          librarianId={user?.id}
+          onLoanCreated={() => {
+            // Refresh dashboard data if needed
+            console.log('Loan created successfully');
+          }}
+        />
+      )}
     </div>
   );
 };

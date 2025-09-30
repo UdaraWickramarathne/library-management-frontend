@@ -44,8 +44,9 @@ export const getUserRoleColor = (role) => {
   }
 };
 
-// API Base URL
+// API Base URLs
 const API_BASE_URL = 'http://localhost:8082';
+const BORROW_SERVICE_URL = 'http://localhost:8083';
 
 // Book Service - API functions for book operations
 export const bookService = {
@@ -137,9 +138,9 @@ export const bookService = {
   },
 
   // Return a book
-  async returnBook(isbn, userId, notes = '') {
+  async returnBook(userId, isbn, notes = '') {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/books/return`, {
+      const response = await fetch(`${BORROW_SERVICE_URL}/api/loans/return`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -218,6 +219,179 @@ export const bookService = {
       return {
         success: false,
         message: error.message || 'Failed to fetch book'
+      };
+    }
+  },
+
+  // Get all borrow records with pagination
+  async getAllBorrowRecords(page = 0, size = 50) {
+    try {
+      const response = await fetch(`${BORROW_SERVICE_URL}/api/loans?page=${page}&size=${size}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data.data || data  // Return the inner data if it exists (handles ApiResponse wrapper)
+      };
+    } catch (error) {
+      console.error('Error fetching borrow records:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch borrow records'
+      };
+    }
+  },
+
+  // Get overdue books
+  async getOverdueBooks() {
+    try {
+      const response = await fetch(`${BORROW_SERVICE_URL}/api/loans/overdue`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data.data || data  // Return the inner data if it exists (handles ApiResponse wrapper)
+      };
+    } catch (error) {
+      console.error('Error fetching overdue books:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch overdue books'
+      };
+    }
+  },
+
+  // Renew a loan
+  async renewLoan(userId, loanId, notes = '') {
+    try {
+      const response = await fetch(`${BORROW_SERVICE_URL}/api/loans/renew`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          borrowRecordId: loanId,
+          notes: notes
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error renewing loan:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to renew loan'
+      };
+    }
+  },
+
+  // Get book by ISBN
+  async getBookByIsbn(isbn) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/books/isbn/${isbn}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            success: false,
+            message: 'Book not found'
+          };
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data.data || data
+      };
+    } catch (error) {
+      console.error('Error fetching book by ISBN:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch book'
+      };
+    }
+  },
+
+  // Get book reservations
+  async getBookReservations(isbn) {
+    try {
+      const response = await fetch(`${BORROW_SERVICE_URL}/api/reservations/book/${isbn}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            success: true,
+            data: []
+          };
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data.data || data || []
+      };
+    } catch (error) {
+      console.error('Error fetching book reservations:', error);
+      return {
+        success: true,
+        data: []
+      };
+    }
+  },
+
+  // Create a loan (checkout book)
+  async createLoan(studentId, isbn, librarianId, notes = '') {
+    try {
+      const response = await fetch(`${BORROW_SERVICE_URL}/api/loans/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: studentId,
+          bookIsbn: isbn,
+          librarianId: librarianId,
+          notes: notes
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data.data || data
+      };
+    } catch (error) {
+      console.error('Error creating loan:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to create loan'
       };
     }
   }

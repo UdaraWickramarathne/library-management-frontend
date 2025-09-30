@@ -73,10 +73,46 @@ const bookService = {
   },
 
   // Borrowing operations (now using borrow-service)
+  // DEPRECATED: Direct borrowing - use reservation system instead
   borrowBook: async (userId, isbn) => {
     const requestBody = { userId, isbn };
     
     return await borrowApiService.post('/api/loans/borrow', requestBody);
+  },
+
+  // NEW RESERVATION SYSTEM
+  // Reserve a book (Students only)
+  reserveBook: async (userId, isbn, notes = '') => {
+    const requestBody = { userId, isbn, notes };
+    
+    return await borrowApiService.post('/api/loans/reserve', requestBody);
+  },
+
+  // Cancel a reservation
+  cancelReservation: async (reservationId, userId) => {
+    return await borrowApiService.post(`/api/loans/reservations/${reservationId}/cancel?userId=${userId}`);
+  },
+
+  // Get user's reservations
+  getUserReservations: async (userId, page = 0, size = 10) => {
+    return await borrowApiService.get(`/api/loans/user/${userId}/reservations?page=${page}&size=${size}`);
+  },
+
+  // Get user's active reservations
+  getUserActiveReservations: async (userId) => {
+    return await borrowApiService.get(`/api/loans/user/${userId}/reservations/active`);
+  },
+
+  // Get book's reservations (for librarians)
+  getBookReservations: async (isbn) => {
+    return await borrowApiService.get(`/api/loans/book/${isbn}/reservations`);
+  },
+
+  // Create loan (Librarian checkout)
+  createLoan: async (userId, isbn, librarianId, notes = '') => {
+    const requestBody = { userId, isbn, librarianId, notes };
+    
+    return await borrowApiService.post('/api/loans/checkout', requestBody);
   },
 
   returnBook: async (userId, isbn, notes = '') => {

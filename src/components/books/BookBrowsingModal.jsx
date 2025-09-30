@@ -102,7 +102,7 @@ const BookBrowsingModal = ({ show, onClose, userId }) => {
     }
   };
 
-  const handleBorrowBook = async (book) => {
+  const handleReserveBook = async (book) => {
     if (!userId) {
       setError(`User not logged in. Please refresh the page and try again.`);
       return;
@@ -125,18 +125,18 @@ const BookBrowsingModal = ({ show, onClose, userId }) => {
       const numericUserId = Number(userId);
       const isbnString = String(book.isbn);
       
-      const response = await bookService.borrowBook(numericUserId, isbnString);
+      const response = await bookService.reserveBook(numericUserId, isbnString, `Reserved from book browser`);
       
       if (response.success) {
-        alert(`Successfully borrowed "${book.title}"`);
+        alert(`Successfully reserved "${book.title}". A librarian will checkout the book for you when it becomes available.`);
         setSelectedBook(null);
         fetchBooks(); // Refresh the books list
       } else {
-        setError(response.message || 'Failed to borrow book');
+        setError(response.message || 'Failed to reserve book');
       }
     } catch (error) {
-      setError(error.message || 'Failed to borrow book');
-      console.error('Error borrowing book:', error);
+      setError(error.message || 'Failed to reserve book');
+      console.error('Error reserving book:', error);
     } finally {
       setBorrowing(false);
     }
@@ -162,7 +162,7 @@ const BookBrowsingModal = ({ show, onClose, userId }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
-          <h2 className="text-2xl font-bold text-gray-800">Browse Available Books</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Browse & Reserve Books</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl font-light hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
@@ -368,11 +368,11 @@ const BookBrowsingModal = ({ show, onClose, userId }) => {
 
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => handleBorrowBook(selectedBook)}
+                  onClick={() => handleReserveBook(selectedBook)}
                   disabled={borrowing || selectedBook.availableCopies === 0}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {borrowing ? 'Borrowing...' : 'Borrow Book'}
+                  {borrowing ? 'Reserving...' : 'Reserve Book'}
                 </button>
                 <button
                   onClick={() => setSelectedBook(null)}
