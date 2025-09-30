@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Clock, AlertTriangle, CheckCircle, Search, Calendar, User, RefreshCw } from 'lucide-react';
+import { 
+  Book, 
+  Calendar, 
+  User, 
+  Search, 
+  CheckCircle, 
+  XCircle, 
+  AlertTriangle, 
+  Filter,
+  RefreshCw,
+  BookOpen,
+  Clock
+} from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
-import { bookService } from '../utils/helpers';
+import { bookService, getUserActiveBorrows, markBookAsReturned, markBookAsLost, paymentService } from '../utils/helpers';
 import LibrarianCheckoutModal from '../components/dashboard/LibrarianCheckoutModal';
 
 const Loans = () => {
@@ -25,11 +37,16 @@ const Loans = () => {
   
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showLoanDetails, setShowLoanDetails] = useState(null);
+  const [showMarkLostModal, setShowMarkLostModal] = useState(null);
   const [processingReturn, setProcessingReturn] = useState(null);
   const [renewingLoan, setRenewingLoan] = useState(null);
+  const [markingLost, setMarkingLost] = useState(null);
+  const [outstandingFines, setOutstandingFines] = useState([]);
+  const [loadingFines, setLoadingFines] = useState(false);
 
   useEffect(() => {
     loadLoansData();
+    fetchOutstandingFines();
   }, []);
 
   const loadLoansData = async () => {
@@ -99,7 +116,10 @@ const Loans = () => {
 
   const refreshData = async () => {
     setRefreshing(true);
-    await loadLoansData();
+    await Promise.all([
+      loadLoansData(),
+      fetchOutstandingFines()
+    ]);
     setRefreshing(false);
   };
 
@@ -170,6 +190,51 @@ const Loans = () => {
       alert('Failed to renew loan: ' + error.message);
     } finally {
       setRenewingLoan(null);
+    }
+  };
+
+  // Fetch outstanding fines for students
+  const fetchOutstandingFines = async () => {
+    if (user?.role !== 'STUDENT') return;
+    
+    setLoadingFines(true);
+    try {
+      const response = await paymentService.getUserFines(user.id);
+      if (response.success) {
+        const fines = response.data || [];
+        const outstanding = fines.filter(fine => fine.status === 'PENDING');
+        setOutstandingFines(outstanding);
+      } else {
+        console.error('Failed to fetch fines:', response.message);
+        setOutstandingFines([]);
+      }
+    } catch (error) {
+      console.error('Error fetching outstanding fines:', error);
+      setOutstandingFines([]);
+    } finally {
+      setLoadingFines(false);
+    }
+  };
+
+  const handleMarkAsLost = async (loan, replacementCost, notes) => {
+    setMarkingLost(true);
+    try {
+      await markBookAsLost(loan.id, user.id, replacementCost, notes);
+      
+      // Update loans list and fines after marking as lost
+      await Promise.all([
+        loadLoansData(),
+        fetchOutstandingFines()
+      ]);
+      setShowMarkLostModal(null);
+      
+      // You could add a success notification here
+      alert('Book marked as lost successfully. A replacement fine has been created for the user.');
+    } catch (error) {
+      console.error('Error marking book as lost:', error);
+      alert('Failed to mark book as lost. Please try again.');
+    } finally {
+      setMarkingLost(false);
     }
   };
 
@@ -335,6 +400,63 @@ const Loans = () => {
         </Card>
       </div>
 
+      {/* Outstanding Fines Alert for Students */}
+      {user?.role === 'STUDENT' && outstandingFines.length > 0 && (
+        <div className="mb-6">
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-orange-500 mr-3 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-orange-800 mb-2">Outstanding Fines</h3>
+                <p className="text-sm text-orange-700 mb-3">
+                  You have {outstandingFines.length} unpaid fine{outstandingFines.length > 1 ? 's' : ''} totaling ${outstandingFines.reduce((sum, fine) => sum + fine.amount, 0).toFixed(2)}.
+                </p>
+                <div className="space-y-2">
+                  {outstandingFines.slice(0, 3).map((fine) => (
+                    <div key={fine.id} className="bg-white bg-opacity-50 rounded p-2 text-xs">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-orange-900">
+                          {fine.type} - ${fine.amount.toFixed(2)}
+                        </span>
+                        <span className="text-orange-600">
+                          {fine.dueDate ? new Date(fine.dueDate).toLocaleDateString() : 'No due date'}
+                        </span>
+                      </div>
+                      {fine.description && (
+                        <p className="text-orange-700 mt-1">{fine.description}</p>
+                      )}
+                    </div>
+                  ))}
+                  {outstandingFines.length > 3 && (
+                    <p className="text-xs text-orange-600 font-medium">
+                      ... and {outstandingFines.length - 3} more fine{outstandingFines.length - 3 > 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button 
+                    size="sm" 
+                    onClick={() => window.location.href = '/payments'}
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
+                  >
+                    Pay Fines
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={fetchOutstandingFines}
+                    disabled={loadingFines}
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50 text-xs"
+                  >
+                    {loadingFines ? 'Refreshing...' : 'Refresh'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card className="mb-6">
         <div className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -456,7 +578,7 @@ const Loans = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      {user?.role === 'LIBRARIAN' && loan.status !== 'RETURNED' && (
+                      {user?.role === 'LIBRARIAN' && loan.status !== 'RETURNED' && loan.status !== 'LOST' && (
                         <>
                           <Button
                             size="sm"
@@ -478,6 +600,15 @@ const Loans = () => {
                               {renewingLoan === loan.id ? 'Renewing...' : 'Renew'}
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowMarkLostModal(loan)}
+                            disabled={markingLost === loan.id}
+                            className="border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400 disabled:opacity-50"
+                          >
+                            {markingLost === loan.id ? 'Processing...' : 'Mark Lost'}
+                          </Button>
                         </>
                       )}
                       <Button
@@ -514,6 +645,7 @@ const Loans = () => {
           isOpen={showCheckoutModal}
           onClose={() => setShowCheckoutModal(false)}
           onSuccess={refreshData}
+          librarianId={user?.id}
         />
       )}
 
@@ -575,6 +707,99 @@ const Loans = () => {
               >
                 Close
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mark as Lost Modal */}
+      {showMarkLostModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Mark Book as Lost</h3>
+              <button
+                onClick={() => setShowMarkLostModal(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-light hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                <div className="flex">
+                  <AlertTriangle className="w-5 h-5 text-red-400 mr-2 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">Warning</p>
+                    <p className="text-xs text-red-700 mt-1">
+                      Marking this book as lost will create a replacement fine for the user and update the book status permanently.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm font-medium text-blue-900">Book: {showMarkLostModal.book?.title}</p>
+                <p className="text-xs text-blue-700">User: {showMarkLostModal.userId}</p>
+                <p className="text-xs text-blue-700">ISBN: {showMarkLostModal.book?.isbn || showMarkLostModal.bookIsbn}</p>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const replacementCost = parseFloat(formData.get('replacementCost'));
+                const notes = formData.get('notes');
+                handleMarkAsLost(showMarkLostModal, replacementCost, notes);
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Replacement Cost ($) *
+                    </label>
+                    <input
+                      type="number"
+                      name="replacementCost"
+                      step="0.01"
+                      min="0"
+                      defaultValue="25.00"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="Enter replacement cost"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes
+                    </label>
+                    <textarea
+                      name="notes"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                      placeholder="Optional notes about why the book is marked as lost..."
+                    />
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowMarkLostModal(null)}
+                      disabled={markingLost}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={markingLost}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      {markingLost ? 'Processing...' : 'Mark as Lost'}
+                    </Button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         </div>

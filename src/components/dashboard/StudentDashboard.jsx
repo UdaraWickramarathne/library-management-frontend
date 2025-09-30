@@ -158,9 +158,9 @@ const StudentDashboard = () => {
           <Button variant="outline" onClick={() => setShowReservationsModal(true)}>
             My Reservations
           </Button>
-          <Button variant="outline" onClick={() => setShowBorrowedModal(true)}>
+          {/* <Button variant="outline" onClick={() => setShowBorrowedModal(true)}>
             My Books
-          </Button>
+          </Button> */}
         </div>
       </div>
 
