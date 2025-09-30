@@ -7,15 +7,14 @@ import {
   Book, 
   FileText, 
   CreditCard, 
-  Bell, 
-  BarChart3,
-  Menu,
-  X,
-  LogOut,
   Settings,
   Home,
   Calendar,
-  MapPin
+  MapPin,
+  Mail,
+  Menu,
+  X,
+  LogOut
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -28,7 +27,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       name: 'Dashboard',
       href: '/dashboard',
       icon: Home,
-      roles: [USER_ROLES.ADMIN, USER_ROLES.LIBRARIAN, USER_ROLES.STUDENT]
+      roles: [USER_ROLES.STUDENT]
     },
     {
       name: 'User Management',
@@ -73,15 +72,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       roles: [USER_ROLES.ADMIN, USER_ROLES.LIBRARIAN, USER_ROLES.STUDENT]
     },
     {
-      name: 'Notifications',
-      href: '/notifications',
-      icon: Bell,
-      roles: [USER_ROLES.ADMIN, USER_ROLES.LIBRARIAN, USER_ROLES.STUDENT]
-    },
-    {
-      name: 'Reports',
-      href: '/reports',
-      icon: BarChart3,
+      name: 'Email Reminders',
+      href: '/reminders',
+      icon: Mail,
       roles: [USER_ROLES.ADMIN, USER_ROLES.LIBRARIAN]
     }
   ];

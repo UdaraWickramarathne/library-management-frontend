@@ -8,7 +8,9 @@ import {
   Plus,
   Search,
   FileText,
-  Calendar
+  Calendar,
+  Mail,
+  CheckCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -125,7 +127,7 @@ const LibrarianDashboard = () => {
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Librarian Dashboard 📚</h1>
+          <h1 className="text-2xl font-bold text-gray-100">Librarian Management Panel 📚</h1>
           <p className="text-gray-400 mt-1">Manage books, loans, and library operations</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2">
@@ -335,6 +337,10 @@ const LibrarianDashboard = () => {
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Overdue Report
                 </Button>
+                <Button variant="secondary" size="sm" className="w-full justify-start">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Email Reminders
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -356,6 +362,12 @@ const LibrarianDashboard = () => {
                   <p className="text-xs text-yellow-400 font-medium">Reminder System</p>
                   <p className="text-xs text-gray-400 mt-1">
                     28 overdue reminders sent today
+                  </p>
+                </div>
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <p className="text-xs text-green-400 font-medium">Email Service</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    All reminder emails delivered successfully
                   </p>
                 </div>
               </div>

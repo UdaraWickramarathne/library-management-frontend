@@ -11,8 +11,7 @@ import RoomBookings from './pages/RoomBookings';
 import NewBooking from './pages/NewBooking';
 import Loans from './pages/Loans';
 import Payments from './pages/Payments';
-import Notifications from './pages/Notifications';
-import Reports from './pages/Reports';
+import Reminders from './pages/Reminders';
 import Settings from './pages/Settings';
 import './App.css';
 
@@ -38,10 +37,35 @@ const ProtectedRoute = ({ children, roles = [] }) => {
   }
 
   if (roles.length > 0 && !roles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    // Smart redirect based on user role
+    if (user.role === 'ADMIN') {
+      return <Navigate to="/users" replace />;
+    } else if (user.role === 'LIBRARIAN') {
+      return <Navigate to="/books" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return children;
+};
+
+// Smart Redirect Component
+const SmartRedirect = () => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Redirect based on user role
+  if (user.role === 'ADMIN') {
+    return <Navigate to="/users" replace />;
+  } else if (user.role === 'LIBRARIAN') {
+    return <Navigate to="/books" replace />;
+  } else {
+    return <Navigate to="/dashboard" replace />;
+  }
 };
 
 // App Router Component
@@ -55,7 +79,7 @@ const AppRouter = () => {
           path="/login"
           element={
             isAuthenticated ? 
-              (mustChangePassword ? <Navigate to="/change-password" replace /> : <Navigate to="/dashboard" replace />) 
+              (mustChangePassword ? <Navigate to="/change-password" replace /> : <SmartRedirect />) 
               : <Login />
           }
         />
@@ -72,7 +96,7 @@ const AppRouter = () => {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['STUDENT']}>
               <Layout>
                 <Dashboard />
               </Layout>
@@ -169,22 +193,11 @@ const AppRouter = () => {
         />
 
         <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute roles={['ADMIN', 'LIBRARIAN', 'STUDENT']}>
-              <Layout>
-                <Notifications />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/reports"
+          path="/reminders"
           element={
             <ProtectedRoute roles={['ADMIN', 'LIBRARIAN']}>
               <Layout>
-                <Reports />
+                <Reminders />
               </Layout>
             </ProtectedRoute>
           }
@@ -203,7 +216,7 @@ const AppRouter = () => {
         
         <Route
           path="/"
-          element={<Navigate to="/dashboard" replace />}
+          element={<SmartRedirect />}
         />
         
         <Route
