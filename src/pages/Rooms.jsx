@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import Toast from '../components/ui/Toast';
+import AddRoomModal from '../components/modals/AddRoomModal';
 import { 
   MapPin, 
   Users, 
@@ -18,7 +19,8 @@ import {
   Phone,
   Coffee,
   Car,
-  Gamepad2
+  Gamepad2,
+  Plus
 } from 'lucide-react';
 
 const Rooms = () => {
@@ -32,6 +34,8 @@ const Rooms = () => {
   const [selectedFacilities, setSelectedFacilities] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [toast, setToast] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addingRoom, setAddingRoom] = useState(false);
 
   // Available facilities with icons
   const facilitiesOptions = [
@@ -149,6 +153,27 @@ const Rooms = () => {
     setToast({ message, type });
   };
 
+  const handleAddRoom = async (roomData) => {
+    try {
+      setAddingRoom(true);
+      const response = await roomService.createRoom(roomData);
+      
+      if (response.success) {
+        showToast('Room created successfully!', 'success');
+        setShowAddModal(false);
+        // Refresh the rooms list
+        await loadRooms();
+      } else {
+        throw new Error(response.message || 'Failed to create room');
+      }
+    } catch (error) {
+      console.error('Error creating room:', error);
+      showToast(error.message || 'Failed to create room', 'error');
+    } finally {
+      setAddingRoom(false);
+    }
+  };
+
   const getFacilityIcon = (facilityName) => {
     const facility = facilitiesOptions.find(f => f.name === facilityName);
     return facility ? facility.icon : Monitor;
@@ -180,13 +205,25 @@ const Rooms = () => {
               View and manage conference rooms and their availability
             </p>
           </div>
-          <Button
-            onClick={loadRooms}
-            className="flex items-center space-x-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Refresh</span>
-          </Button>
+          <div className="flex space-x-3">
+            {(user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.LIBRARIAN) && (
+              <Button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Room</span>
+              </Button>
+            )}
+            <Button
+              onClick={loadRooms}
+              className="flex items-center space-x-2"
+              variant="outline"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -416,6 +453,14 @@ const Rooms = () => {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Add Room Modal */}
+      <AddRoomModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddRoom}
+        loading={addingRoom}
+      />
     </div>
   );
 };

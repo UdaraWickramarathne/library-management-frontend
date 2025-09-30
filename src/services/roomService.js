@@ -132,6 +132,15 @@ export const roomService = {
     }
   },
 
+  async createRoom(roomData) {
+    try {
+      const response = await roomApiService.post('/api/rooms', roomData);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Booking Management
   async createBooking(bookingData) {
     try {
