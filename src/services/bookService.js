@@ -1,4 +1,4 @@
-import { bookApiService } from './api';
+import { bookApiService, borrowApiService } from './api';
 
 const bookService = {
   // Health check
@@ -72,45 +72,49 @@ const bookService = {
     return await bookApiService.get(`/api/books/low-stock?threshold=${threshold}`);
   },
 
-  // Borrowing operations
+  // Borrowing operations (now using borrow-service)
   borrowBook: async (userId, isbn) => {
     const requestBody = { userId, isbn };
     
-    return await bookApiService.post('/api/books/borrow', requestBody);
+    return await borrowApiService.post('/api/loans/borrow', requestBody);
   },
 
   returnBook: async (userId, isbn, notes = '') => {
-    return await bookApiService.post('/api/books/return', { userId, isbn, notes });
+    return await borrowApiService.post('/api/loans/return', { userId, isbn, notes });
   },
 
-  // Borrow records and history
+  renewLoan: async (userId, borrowRecordId, notes = '') => {
+    return await borrowApiService.post('/api/loans/renew', { userId, borrowRecordId, notes });
+  },
+
+  // Borrow records and history (now using borrow-service)
   getUserBorrowHistory: async (userId, page = 0, size = 10) => {
-    return await bookApiService.get(`/api/books/borrows/user/${userId}?page=${page}&size=${size}`);
+    return await borrowApiService.get(`/api/loans/user/${userId}/history?page=${page}&size=${size}`);
   },
 
   getBookBorrowHistory: async (isbn, page = 0, size = 10) => {
-    return await bookApiService.get(`/api/books/borrows/book/${isbn}?page=${page}&size=${size}`);
+    return await borrowApiService.get(`/api/loans/book/${isbn}/history?page=${page}&size=${size}`);
   },
 
   getUserActiveBorrows: async (userId) => {
-    return await bookApiService.get(`/api/books/borrows/user/${userId}/active`);
+    return await borrowApiService.get(`/api/loans/user/${userId}/active`);
   },
 
   getAllBorrowRecords: async (page = 0, size = 10) => {
-    return await bookApiService.get(`/api/books/borrows?page=${page}&size=${size}`);
+    return await borrowApiService.get(`/api/loans?page=${page}&size=${size}`);
   },
 
-  // Library management
+  // Library management (now using borrow-service)
   getOverdueBooks: async () => {
-    return await bookApiService.get('/api/books/borrows/overdue');
+    return await borrowApiService.get('/api/loans/overdue');
   },
 
   getBooksDueSoon: async (days = 3) => {
-    return await bookApiService.get(`/api/books/borrows/due-soon?days=${days}`);
+    return await borrowApiService.get(`/api/loans/due-soon?days=${days}`);
   },
 
   updateOverdueStatus: async () => {
-    return await bookApiService.post('/api/books/borrows/update-overdue');
+    return await borrowApiService.post('/api/loans/update-overdue');
   }
 };
 

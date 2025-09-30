@@ -1,6 +1,7 @@
 const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL || 'http://localhost:8080';
 const BOOK_SERVICE_URL = import.meta.env.VITE_BOOK_SERVICE_URL || 'http://localhost:8082';
 const ROOM_SERVICE_URL = import.meta.env.VITE_ROOM_SERVICE_URL || 'http://localhost:8081';
+const BORROW_SERVICE_URL = import.meta.env.VITE_BORROW_SERVICE_URL || 'http://localhost:8083';
 
 class ApiService {
   constructor(baseURL = USER_SERVICE_URL) {
@@ -18,6 +19,10 @@ class ApiService {
 
   static getRoomService() {
     return new ApiService(ROOM_SERVICE_URL);
+  }
+
+  static getBorrowService() {
+    return new ApiService(BORROW_SERVICE_URL);
   }
 
   async request(endpoint, options = {}) {
@@ -94,3 +99,4 @@ export const apiService = new ApiService();
 export const userApiService = ApiService.getUserService();
 export const bookApiService = ApiService.getBookService();
 export const roomApiService = ApiService.getRoomService();
+export const borrowApiService = ApiService.getBorrowService();
