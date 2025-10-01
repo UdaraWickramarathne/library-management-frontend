@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Card } from '../components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
 import { bookService, getUserActiveBorrows, markBookAsReturned, markBookAsLost, paymentService } from '../utils/helpers';
 import LibrarianCheckoutModal from '../components/dashboard/LibrarianCheckoutModal';
@@ -256,10 +256,10 @@ const Loans = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      'ACTIVE': 'bg-blue-100 text-blue-800 border border-blue-200',
-      'RENEWED': 'bg-indigo-100 text-indigo-800 border border-indigo-200',
-      'OVERDUE': 'bg-red-100 text-red-800 border border-red-200',
-      'RETURNED': 'bg-green-100 text-green-800 border border-green-200'
+      'ACTIVE': 'bg-blue-500/20 text-blue-400 border-blue-500/20',
+      'RENEWED': 'bg-indigo-500/20 text-indigo-400 border-indigo-500/20',
+      'OVERDUE': 'bg-red-500/20 text-red-400 border-red-500/20',
+      'RETURNED': 'bg-green-500/20 text-green-400 border-green-500/20'
     };
     return badges[status?.toUpperCase()] || badges.ACTIVE;
   };
@@ -305,160 +305,127 @@ const Loans = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="space-y-6">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-slate-700 rounded"></div>
             ))}
           </div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-64 bg-slate-700 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Loan Management</h1>
-        <div className="flex gap-2">
-          {user?.role === 'LIBRARIAN' && (
-            <Button
-              onClick={() => setShowCheckoutModal(true)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
-            >
-              Create New Loan
-            </Button>
-          )}
-          <Button
-            onClick={refreshData}
-            variant="outline"
-            disabled={refreshing}
-            className="border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
-          >
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-100">
+            {user?.role === 'STUDENT' ? 'My Loans & Borrows 📚' : 'Loan Management 📚'}
+          </h1>
+          <p className="text-gray-400 mt-1">
+            {user?.role === 'STUDENT' ? 'View your borrowed books and loan history' : 'Manage library loans and book returns'}
+          </p>
+        </div>
+        <div className="mt-4 sm:mt-0 flex space-x-2">
+          <Button onClick={refreshData} disabled={refreshing} variant="secondary">
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
+          {user?.role === 'LIBRARIAN' && (
+            <Button onClick={() => setShowCheckoutModal(true)}>
+              <BookOpen className="w-4 h-4 mr-2" />
+              Create New Loan
+            </Button>
+          )}
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+        <div className="bg-red-500/20 border border-red-500/20 text-red-400 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <div className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <BookOpen className="w-8 h-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Loans</p>
-                <p className="text-2xl font-bold text-gray-900">{loanStats.totalLoans}</p>
+              <BookOpen className="w-6 h-6 text-teal-400" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-400">Total Loans</p>
+                <p className="text-lg font-bold text-gray-100">{loanStats.totalLoans}</p>
               </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <div className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <Clock className="w-8 h-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Active Loans</p>
-                <p className="text-2xl font-bold text-gray-900">{loanStats.activeLoans}</p>
+              <Clock className="w-6 h-6 text-green-400" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-400">Active Loans</p>
+                <p className="text-lg font-bold text-gray-100">{loanStats.activeLoans}</p>
               </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <div className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Overdue</p>
-                <p className="text-2xl font-bold text-gray-900">{loanStats.overdueLoans}</p>
+              <AlertTriangle className="w-6 h-6 text-red-400" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-400">Overdue</p>
+                <p className="text-lg font-bold text-gray-100">{loanStats.overdueLoans}</p>
               </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <div className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Returned Today</p>
-                <p className="text-2xl font-bold text-gray-900">{loanStats.returnedToday}</p>
+              <CheckCircle className="w-6 h-6 text-green-400" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-400">Returned Today</p>
+                <p className="text-lg font-bold text-gray-100">{loanStats.returnedToday}</p>
               </div>
             </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
 
       {/* Outstanding Fines Alert for Students */}
       {user?.role === 'STUDENT' && outstandingFines.length > 0 && (
-        <div className="mb-6">
-          <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <AlertTriangle className="w-5 h-5 text-orange-500 mr-3 mt-0.5" />
+        <Card className="border-red-500/20 bg-red-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <AlertTriangle className="w-6 h-6 text-red-400 mr-3" />
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-orange-800 mb-2">Outstanding Fines</h3>
-                <p className="text-sm text-orange-700 mb-3">
-                  You have {outstandingFines.length} unpaid fine{outstandingFines.length > 1 ? 's' : ''} totaling ${outstandingFines.reduce((sum, fine) => sum + fine.amount, 0).toFixed(2)}.
-                </p>
-                <div className="space-y-2">
-                  {outstandingFines.slice(0, 3).map((fine) => (
-                    <div key={fine.id} className="bg-white bg-opacity-50 rounded p-2 text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-orange-900">
-                          {fine.type} - ${fine.amount.toFixed(2)}
-                        </span>
-                        <span className="text-orange-600">
-                          {fine.dueDate ? new Date(fine.dueDate).toLocaleDateString() : 'No due date'}
-                        </span>
-                      </div>
-                      {fine.description && (
-                        <p className="text-orange-700 mt-1">{fine.description}</p>
-                      )}
-                    </div>
-                  ))}
-                  {outstandingFines.length > 3 && (
-                    <p className="text-xs text-orange-600 font-medium">
-                      ... and {outstandingFines.length - 3} more fine{outstandingFines.length - 3 > 1 ? 's' : ''}
-                    </p>
-                  )}
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <Button 
-                    size="sm" 
-                    onClick={() => window.location.href = '/payments'}
-                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
-                  >
-                    Pay Fines
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={fetchOutstandingFines}
-                    disabled={loadingFines}
-                    className="border-orange-300 text-orange-700 hover:bg-orange-50 text-xs"
-                  >
-                    {loadingFines ? 'Refreshing...' : 'Refresh'}
-                  </Button>
-                </div>
+                <h3 className="text-lg font-semibold text-red-400">Action Required - Outstanding Fines</h3>
+                <p className="text-gray-300 text-sm">You have {outstandingFines.length} pending fine(s) totaling ${outstandingFines.reduce((sum, fine) => sum + fine.amount, 0).toFixed(2)}</p>
               </div>
+              <Button 
+                onClick={() => window.location.href = '/payments'}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Pay Fines
+              </Button>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      <Card className="mb-6">
-        <div className="p-4">
+      {/* Filters and Search */}
+      <Card>
+        <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -476,7 +443,7 @@ const Loans = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -484,160 +451,156 @@ const Loans = () => {
                 <option value="overdue">Overdue</option>
                 <option value="returned">Returned</option>
               </select>
+              <Button variant="secondary" size="sm">
+                <Filter className="w-4 h-4 mr-2" />
+                More Filters
+              </Button>
             </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
 
+      {/* Loan Records Table */}
       <Card>
-        <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Loan Records ({filteredLoans.length})
-          </h2>
-        </div>
-        <div className="overflow-x-auto bg-gray-50">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-gray-100 to-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Book Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Issue Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Due Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredLoans.map((loan) => (
-                <tr key={loan.id} className="hover:bg-blue-50 transition-colors duration-200">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <BookOpen className="w-5 h-5 text-blue-500 mr-3" />
+        <CardHeader>
+          <CardTitle>Loan Records ({filteredLoans.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-700 border-b border-slate-600">
+                <tr>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Book Details
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    User & Dates
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Due Date
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {filteredLoans.map((loan) => (
+                  <tr key={loan.id} className="hover:bg-slate-700/50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <BookOpen className="w-5 h-5 text-blue-400 mr-3" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-100">
+                            {loan.book?.title || 'Unknown Title'}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            ISBN: {loan.book?.isbn || loan.bookIsbn || 'N/A'}
+                          </p>
+                          <p className="text-xs text-gray-400">Loan #{loan.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {loan.book?.title || 'Unknown Title'}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ISBN: {loan.book?.isbn || loan.bookIsbn || 'N/A'}
-                        </div>
+                        <p className="text-sm font-medium text-gray-100 flex items-center">
+                          <User className="w-4 h-4 mr-2 text-indigo-400" />
+                          {loan.user?.name || `User #${loan.userId}`}
+                        </p>
+                        <p className="text-xs text-gray-400">ID: {loan.userId}</p>
+                        <p className="text-xs text-gray-400">
+                          Issued: {formatDate(loan.issueDate || loan.borrowDate)}
+                        </p>
+                        {loan.renewalCount > 0 && (
+                          <p className="text-xs text-yellow-400">
+                            Renewed {loan.renewalCount} time(s)
+                          </p>
+                        )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <User className="w-5 h-5 text-indigo-500 mr-3" />
+                    </td>
+                    <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {loan.user?.name || 'Unknown User'}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ID: {loan.userId}
-                        </div>
+                        <p className="text-sm font-medium text-gray-100 flex items-center">
+                          <Calendar className="w-4 h-4 mr-2 text-orange-400" />
+                          {formatDate(loan.dueDate)}
+                        </p>
+                        {isOverdue(loan) && (
+                          <p className="text-xs text-red-400 font-medium mt-1">
+                            {calculateDaysOverdue(loan.dueDate)} days overdue
+                          </p>
+                        )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 text-green-500 mr-2" />
-                      {formatDate(loan.issueDate || loan.borrowDate)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 text-orange-500 mr-2" />
-                      {formatDate(loan.dueDate)}
-                      {isOverdue(loan) && (
-                        <span className="ml-2 text-red-600 text-xs font-medium bg-red-100 px-2 py-1 rounded-full">
-                          ({calculateDaysOverdue(loan.dueDate)} days overdue)
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(loan.status)}`}>
-                      {getStatusIcon(loan.status)}
-                      <span className="ml-1">{loan.status || 'Unknown'}</span>
-                    </span>
-                    {loan.renewalCount > 0 && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        Renewed {loan.renewalCount} time(s)
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      {user?.role === 'LIBRARIAN' && loan.status !== 'RETURNED' && loan.status !== 'LOST' && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReturnBook(loan)}
-                            disabled={processingReturn === loan.id}
-                            className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 disabled:opacity-50"
-                          >
-                            {processingReturn === loan.id ? 'Processing...' : 'Return'}
-                          </Button>
-                          {canRenewLoan(loan) && (
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(loan.status)}`}>
+                        {getStatusIcon(loan.status)}
+                        <span className="ml-1">{loan.status || 'Unknown'}</span>
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end space-x-2">
+                        {user?.role === 'LIBRARIAN' && loan.status !== 'RETURNED' && loan.status !== 'LOST' && (
+                          <>
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleRenewLoan(loan)}
-                              disabled={renewingLoan === loan.id}
-                              className="border-green-300 text-green-600 hover:bg-green-50 hover:border-green-400 disabled:opacity-50"
+                              onClick={() => handleReturnBook(loan)}
+                              disabled={processingReturn === loan.id}
+                              className="border-red-300 text-red-400 hover:bg-red-500/10"
                             >
-                              {renewingLoan === loan.id ? 'Renewing...' : 'Renew'}
+                              {processingReturn === loan.id ? 'Processing...' : 'Return'}
                             </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShowMarkLostModal(loan)}
-                            disabled={markingLost === loan.id}
-                            className="border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400 disabled:opacity-50"
-                          >
-                            {markingLost === loan.id ? 'Processing...' : 'Mark Lost'}
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowLoanDetails(loan)}
-                        className="border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400"
-                      >
-                        View Details
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {filteredLoans.length === 0 && (
-            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-blue-50">
-              <BookOpen className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg font-medium">No loan records found</p>
-              {searchTerm && (
-                <p className="text-gray-500 text-sm mt-2">
-                  Try adjusting your search criteria
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+                            {canRenewLoan(loan) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRenewLoan(loan)}
+                                disabled={renewingLoan === loan.id}
+                                className="border-green-300 text-green-400 hover:bg-green-500/10"
+                              >
+                                {renewingLoan === loan.id ? 'Renewing...' : 'Renew'}
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setShowMarkLostModal(loan)}
+                              disabled={markingLost === loan.id}
+                              className="border-orange-300 text-orange-400 hover:bg-orange-500/10"
+                            >
+                              {markingLost === loan.id ? 'Processing...' : 'Mark Lost'}
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setShowLoanDetails(loan)}
+                        >
+                          <BookOpen className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredLoans.length === 0 && (
+              <div className="text-center py-8">
+                <BookOpen className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No loan records found</p>
+                {searchTerm && (
+                  <p className="text-gray-500 text-sm mt-2">
+                    Try adjusting your search criteria
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
       </Card>
 
       {showCheckoutModal && (
@@ -650,10 +613,10 @@ const Loans = () => {
       )}
 
       {showLoanDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-gray-200 relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md border border-slate-600">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Loan Details</h3>
+              <h3 className="text-lg font-semibold text-gray-100">Loan Details</h3>
               <button
                 onClick={() => setShowLoanDetails(null)}
                 className="text-gray-400 hover:text-gray-600 text-2xl font-light hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
@@ -662,48 +625,47 @@ const Loans = () => {
               </button>
             </div>
             <div className="space-y-4">
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <label className="text-sm font-medium text-blue-800">Book</label>
-                <p className="text-sm text-blue-900 font-medium">{showLoanDetails.book?.title}</p>
+              <div className="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                <label className="text-sm font-medium text-blue-400">Book</label>
+                <p className="text-sm text-blue-300 font-medium">{showLoanDetails.book?.title}</p>
               </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <label className="text-sm font-medium text-gray-600">ISBN</label>
-                <p className="text-sm text-gray-900">{showLoanDetails.book?.isbn || showLoanDetails.bookIsbn}</p>
+              <div className="bg-slate-700 p-3 rounded-lg">
+                <label className="text-sm font-medium text-gray-400">ISBN</label>
+                <p className="text-sm text-gray-200">{showLoanDetails.book?.isbn || showLoanDetails.bookIsbn}</p>
               </div>
-              <div className="bg-indigo-50 p-3 rounded-lg">
-                <label className="text-sm font-medium text-indigo-800">User ID</label>
-                <p className="text-sm text-indigo-900 font-medium">{showLoanDetails.userId}</p>
+              <div className="bg-indigo-500/10 p-3 rounded-lg border border-indigo-500/20">
+                <label className="text-sm font-medium text-indigo-400">User ID</label>
+                <p className="text-sm text-indigo-300 font-medium">{showLoanDetails.userId}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <label className="text-sm font-medium text-green-800">Issue Date</label>
-                  <p className="text-sm text-green-900">{formatDate(showLoanDetails.issueDate || showLoanDetails.borrowDate)}</p>
+                <div className="bg-green-500/10 p-3 rounded-lg border border-green-500/20">
+                  <label className="text-sm font-medium text-green-400">Issue Date</label>
+                  <p className="text-sm text-green-300">{formatDate(showLoanDetails.issueDate || showLoanDetails.borrowDate)}</p>
                 </div>
-                <div className="bg-orange-50 p-3 rounded-lg">
-                  <label className="text-sm font-medium text-orange-800">Due Date</label>
-                  <p className="text-sm text-orange-900">{formatDate(showLoanDetails.dueDate)}</p>
+                <div className="bg-orange-500/10 p-3 rounded-lg border border-orange-500/20">
+                  <label className="text-sm font-medium text-orange-400">Due Date</label>
+                  <p className="text-sm text-orange-300">{formatDate(showLoanDetails.dueDate)}</p>
                 </div>
               </div>
-              <div className="bg-purple-50 p-3 rounded-lg">
-                <label className="text-sm font-medium text-purple-800">Status</label>
+              <div className="bg-purple-500/10 p-3 rounded-lg border border-purple-500/20">
+                <label className="text-sm font-medium text-purple-400">Status</label>
                 <div className="mt-1">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(showLoanDetails.status)}`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(showLoanDetails.status)}`}>
                     {showLoanDetails.status}
                   </span>
                 </div>
               </div>
               {showLoanDetails.returnDate && (
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <label className="text-sm font-medium text-green-800">Return Date</label>
-                  <p className="text-sm text-green-900">{formatDate(showLoanDetails.returnDate)}</p>
+                <div className="bg-green-500/10 p-3 rounded-lg border border-green-500/20">
+                  <label className="text-sm font-medium text-green-400">Return Date</label>
+                  <p className="text-sm text-green-300">{formatDate(showLoanDetails.returnDate)}</p>
                 </div>
               )}
             </div>
-            <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-end mt-6 pt-4 border-t border-slate-600">
               <Button
                 variant="outline"
                 onClick={() => setShowLoanDetails(null)}
-                className="bg-gray-50 hover:bg-gray-100 border-gray-300"
               >
                 Close
               </Button>
@@ -715,9 +677,9 @@ const Loans = () => {
       {/* Mark as Lost Modal */}
       {showMarkLostModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-gray-200">
+          <div className="bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md border border-slate-600">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Mark Book as Lost</h3>
+              <h3 className="text-lg font-semibold text-gray-100">Mark Book as Lost</h3>
               <button
                 onClick={() => setShowMarkLostModal(null)}
                 className="text-gray-400 hover:text-gray-600 text-2xl font-light hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
@@ -727,22 +689,22 @@ const Loans = () => {
             </div>
             
             <div className="space-y-4">
-              <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+              <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg">
                 <div className="flex">
                   <AlertTriangle className="w-5 h-5 text-red-400 mr-2 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-red-800">Warning</p>
-                    <p className="text-xs text-red-700 mt-1">
+                    <p className="text-sm font-medium text-red-400">Warning</p>
+                    <p className="text-xs text-red-300 mt-1">
                       Marking this book as lost will create a replacement fine for the user and update the book status permanently.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm font-medium text-blue-900">Book: {showMarkLostModal.book?.title}</p>
-                <p className="text-xs text-blue-700">User: {showMarkLostModal.userId}</p>
-                <p className="text-xs text-blue-700">ISBN: {showMarkLostModal.book?.isbn || showMarkLostModal.bookIsbn}</p>
+              <div className="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                <p className="text-sm font-medium text-blue-300">Book: {showMarkLostModal.book?.title}</p>
+                <p className="text-xs text-blue-400">User: {showMarkLostModal.userId}</p>
+                <p className="text-xs text-blue-400">ISBN: {showMarkLostModal.book?.isbn || showMarkLostModal.bookIsbn}</p>
               </div>
 
               <form onSubmit={(e) => {
@@ -754,7 +716,7 @@ const Loans = () => {
               }}>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Replacement Cost ($) *
                     </label>
                     <input
@@ -764,24 +726,24 @@ const Loans = () => {
                       min="0"
                       defaultValue="25.00"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="Enter replacement cost"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Notes
                     </label>
                     <textarea
                       name="notes"
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
                       placeholder="Optional notes about why the book is marked as lost..."
                     />
                   </div>
 
-                  <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <div className="flex justify-end space-x-3 pt-4 border-t border-slate-600">
                     <Button
                       type="button"
                       variant="outline"
