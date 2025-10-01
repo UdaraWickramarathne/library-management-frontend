@@ -36,27 +36,6 @@ const Header = ({ onMenuClick }) => {
 
           {/* Right side */}
           <div className="flex items-center space-x-3">
-            {/* Notifications */}
-            <Button variant="ghost" size="sm" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 bg-yellow-500 text-slate-900 text-xs font-medium rounded-full w-5 h-5 flex items-center justify-center">
-                3
-              </span>
-            </Button>
-
-            {/* User Avatar */}
-            <div className="flex items-center">
-              <img
-                src={user?.avatar}
-                alt={user?.name}
-                className="w-8 h-8 rounded-full"
-              />
-              <div className="ml-2 hidden sm:block">
-                <p className="text-sm font-medium text-gray-100">
-                  {user?.name}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

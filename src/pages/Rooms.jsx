@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import Toast from '../components/ui/Toast';
+import AddRoomModal from '../components/modals/AddRoomModal';
 import { 
   MapPin, 
   Users, 
@@ -18,7 +19,8 @@ import {
   Phone,
   Coffee,
   Car,
-  Gamepad2
+  Gamepad2,
+  Plus
 } from 'lucide-react';
 
 const Rooms = () => {
@@ -32,6 +34,8 @@ const Rooms = () => {
   const [selectedFacilities, setSelectedFacilities] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [toast, setToast] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addingRoom, setAddingRoom] = useState(false);
 
   // Available facilities with icons
   const facilitiesOptions = [
@@ -149,6 +153,27 @@ const Rooms = () => {
     setToast({ message, type });
   };
 
+  const handleAddRoom = async (roomData) => {
+    try {
+      setAddingRoom(true);
+      const response = await roomService.createRoom(roomData);
+      
+      if (response.success) {
+        showToast('Room created successfully!', 'success');
+        setShowAddModal(false);
+        // Refresh the rooms list
+        await loadRooms();
+      } else {
+        throw new Error(response.message || 'Failed to create room');
+      }
+    } catch (error) {
+      console.error('Error creating room:', error);
+      showToast(error.message || 'Failed to create room', 'error');
+    } finally {
+      setAddingRoom(false);
+    }
+  };
+
   const getFacilityIcon = (facilityName) => {
     const facility = facilitiesOptions.find(f => f.name === facilityName);
     return facility ? facility.icon : Monitor;
@@ -180,13 +205,25 @@ const Rooms = () => {
               View and manage conference rooms and their availability
             </p>
           </div>
-          <Button
-            onClick={loadRooms}
-            className="flex items-center space-x-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Refresh</span>
-          </Button>
+          <div className="flex space-x-3">
+            {(user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.LIBRARIAN) && (
+              <Button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Room</span>
+              </Button>
+            )}
+            <Button
+              onClick={loadRooms}
+              className="flex items-center space-x-2"
+              variant="outline"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -290,68 +327,91 @@ const Rooms = () => {
 
       {/* Rooms Grid */}
       {error ? (
-        <Card className="p-8 text-center">
-          <div className="text-red-600 mb-4">
-            <p className="text-lg font-medium">Error loading rooms</p>
-            <p className="text-sm text-gray-600 mt-2">{error}</p>
+        <Card className="p-12 text-center bg-gradient-to-br from-red-50 to-rose-100 border border-red-200">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <RefreshCw className="w-10 h-10 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-red-900 mb-3">
+              Error loading rooms
+            </h3>
+            <p className="text-red-700 mb-6 leading-relaxed bg-red-50 p-4 rounded-lg border border-red-200">
+              {error}
+            </p>
+            <Button 
+              onClick={loadRooms} 
+              className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
           </div>
-          <Button onClick={loadRooms} className="mt-4">
-            Try Again
-          </Button>
         </Card>
       ) : filteredRooms.length === 0 ? (
-        <Card className="p-8 text-center">
-          <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-lg font-medium text-gray-600 mb-2">
-            No rooms found
-          </p>
-          <p className="text-sm text-gray-500">
-            {searchTerm || minCapacity || selectedFacilities.length > 0 || selectedDate
-              ? 'Try adjusting your filters or search criteria'
-              : 'No rooms are currently available'
-            }
-          </p>
+        <Card className="p-12 text-center bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <MapPin className="w-10 h-10 text-teal-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              No rooms found
+            </h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              {searchTerm || minCapacity || selectedFacilities.length > 0 || selectedDate
+                ? 'Try adjusting your filters or search criteria to find available rooms'
+                : 'No rooms are currently available in the system'
+              }
+            </p>
+            {(searchTerm || minCapacity || selectedFacilities.length > 0 || selectedDate) && (
+              <Button 
+                onClick={clearFilters}
+                className="bg-teal-600 hover:bg-teal-700 text-white font-medium px-6 py-2"
+              >
+                Clear All Filters
+              </Button>
+            )}
+          </div>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRooms.map((room) => (
-            <Card key={room.id} className="hover:shadow-lg transition-shadow duration-200">
+            <Card key={room.id} className="hover:shadow-xl transition-all duration-300 border border-gray-200 bg-white">
               <div className="p-6">
                 {/* Room Header */}
-                <div className="mb-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                <div className="mb-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-xl font-bold text-gray-900 leading-tight">
                       {room.name}
                     </h3>
                     <span className={`
-                      px-2 py-1 text-xs font-medium rounded-full
+                      px-3 py-1 text-xs font-semibold rounded-full shadow-sm
                       ${room.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                        : 'bg-rose-100 text-rose-700 border border-rose-200'
                       }
                     `}>
                       {room.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  <div className="flex items-center text-gray-600 text-sm">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <span>{room.location || 'Location not specified'}</span>
+                  <div className="flex items-center text-gray-600 text-sm bg-gray-50 px-3 py-2 rounded-lg">
+                    <MapPin className="w-4 h-4 mr-2 text-teal-600" />
+                    <span className="font-medium">{room.location || 'Location not specified'}</span>
                   </div>
                 </div>
 
                 {/* Room Details */}
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center text-gray-600">
-                      <Users className="w-4 h-4 mr-2" />
-                      <span className="text-sm">Capacity</span>
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center justify-between bg-teal-50 px-4 py-3 rounded-lg border border-teal-100">
+                    <div className="flex items-center text-teal-700">
+                      <Users className="w-5 h-5 mr-2" />
+                      <span className="text-sm font-semibold">Capacity</span>
                     </div>
-                    <span className="font-medium">{room.capacity} people</span>
+                    <span className="text-lg font-bold text-teal-800">{room.capacity} people</span>
                   </div>
 
                   {room.description && (
-                    <div>
-                      <p className="text-sm text-gray-600 line-clamp-2">
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">
                         {room.description}
                       </p>
                     </div>
@@ -360,17 +420,20 @@ const Rooms = () => {
 
                 {/* Facilities */}
                 {room.facilities && room.facilities.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Facilities</h4>
-                    <div className="flex flex-wrap gap-1">
+                  <div className="mb-6">
+                    <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center">
+                      <Monitor className="w-4 h-4 mr-2 text-teal-600" />
+                      Facilities
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
                       {room.facilities.map((facility, index) => {
                         const IconComponent = getFacilityIcon(facility);
                         return (
                           <div
                             key={index}
-                            className="flex items-center space-x-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                            className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-teal-50 to-blue-50 text-teal-700 rounded-lg text-xs font-medium border border-teal-200 shadow-sm"
                           >
-                            <IconComponent className="w-3 h-3" />
+                            <IconComponent className="w-4 h-4" />
                             <span>{facility}</span>
                           </div>
                         );
@@ -380,21 +443,22 @@ const Rooms = () => {
                 )}
 
                 {/* Actions */}
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex space-x-2">
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex space-x-3">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="flex-1 bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-700 hover:text-teal-800 font-medium transition-all duration-200"
                       onClick={() => window.open(`/bookings/new?roomId=${room.id}`, '_self')}
                     >
-                      <Calendar className="w-4 h-4 mr-1" />
+                      <Calendar className="w-4 h-4 mr-2" />
                       Book Room
                     </Button>
                     {(user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.LIBRARIAN) && (
                       <Button
                         variant="outline"
                         size="sm"
+                        className="bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 hover:text-gray-800 font-medium transition-all duration-200"
                         onClick={() => console.log('View details for room:', room.id)}
                       >
                         Details
@@ -416,6 +480,14 @@ const Rooms = () => {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Add Room Modal */}
+      <AddRoomModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddRoom}
+        loading={addingRoom}
+      />
     </div>
   );
 };
