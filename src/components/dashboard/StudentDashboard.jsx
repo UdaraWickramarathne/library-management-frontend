@@ -155,7 +155,7 @@ const StudentDashboard = () => {
           <Button onClick={() => setShowBrowseModal(true)}>
             Reserve Books
           </Button>
-          <Button variant="outline" onClick={() => setShowReservationsModal(true)}>
+          <Button variant="secondary" onClick={() => setShowReservationsModal(true)}>
             My Reservations
           </Button>
           {/* <Button variant="outline" onClick={() => setShowBorrowedModal(true)}>
